@@ -1,0 +1,78 @@
+---
+alwaysApply: false
+pathGlob: admin/**
+---
+
+# Admin 前端项目开发规范
+
+## 1. 技术栈
+
+- 框架：UmiJS 4.x + React 19 + Ant Design 5.x
+- 状态管理：SWR
+- 语言：TypeScript 5.6+
+- 开发端口：6806
+
+## 2. 代码组织
+
+- 页面组件：`src/pages/`
+- 公共组件：`src/components/`
+- API 服务：`src/services/`
+- 工具函数：`src/utils/`
+- 类型定义：`src/types/`
+- 常量定义：`src/constants/`
+
+## 3. 组件规范
+
+- 组件使用函数式写法，单文件不超过200行
+- 禁止使用 `any`，类型需在 `@/types` 或组件内定义，以 `I` 前缀命名
+- 组件保持无副作用，跨组件状态通过 props 或状态管理传递
+- 统一从 `@components` 引入组件，便于 tree-shaking
+- 组件文件头部添加中文注释说明功能和用途
+
+## 4. API 请求
+
+- 使用 SWR 进行数据请求
+- API 服务定义在 `src/services/` 目录
+- 开发环境代理配置在 `config/proxy.ts`，代理到后端 6808 端口
+- 请求错误统一在 `src/requestErrorConfig.ts` 中处理
+
+## 5. 路由与权限
+
+- 路由配置在 `config/routes.ts`
+- 权限配置在 `src/access.ts`，结合路由实现页面级权限控制
+- 路由路径使用小写，单词间用连字符分隔
+
+## 6. 错误处理
+
+- 使用统一的错误处理配置（`src/requestErrorConfig.ts`）
+- 根据错误类型显示相应的提示信息
+- 401 错误自动跳转到登录页
+- 使用 Ant Design 的 message 或 notification 显示错误提示
+
+## 7. 配置管理
+
+- 主配置：`config/config.ts`
+- 路由配置：`config/routes.ts`
+- 代理配置：`config/proxy.ts`（开发环境代理到 6808 端口）
+- 默认设置：`config/defaultSettings.ts`
+
+## 8. 类型定义
+
+- 所有类型定义使用 TypeScript
+- 接口类型以 `I` 前缀命名，如 `IUser`、`ILoginFormData`
+- 类型定义统一放在 `src/types/` 目录
+- 避免使用 `any`，使用 `unknown` 或具体类型
+
+## 9. 样式规范
+
+- 使用 Less 编写样式
+- 组件样式文件与组件文件同名，放在同一目录
+- 使用 Ant Design 的主题变量
+- 避免内联样式，优先使用 className
+
+## 10. 性能优化
+
+- 合理使用 React.memo 和 useMemo
+- 避免不必要的重渲染
+- 使用代码分割和懒加载
+- 图片资源使用合适的格式和大小

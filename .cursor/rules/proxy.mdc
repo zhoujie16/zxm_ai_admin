@@ -1,0 +1,102 @@
+---
+alwaysApply: false
+pathGlob: proxy/**
+---
+
+# Proxy 代理服务开发规范
+
+## 1. 技术栈
+
+- 语言：Go 1.21+
+- 核心库：`net/http/httputil` (反向代理)
+- 日志：`log/slog` (结构化日志)
+- 配置：环境变量
+- 服务端口：6800
+
+## 2. 配置管理
+
+### 2.1 环境变量配置
+- 通过环境变量配置，所有配置项都有默认值
+- 配置加载逻辑在 `config/config.go` 中
+- 默认值在代码中定义
+
+### 2.2 主要配置项
+- `TARGET_URL` - 目标转发地址（默认：`https://open.bigmodel.cn`）
+- `OVERRIDE_AUTH_TOKEN` - 替换的 Authorization 头
+- `REQUIRED_AUTH_TOKENS` - Authorization 白名单（逗号分隔）
+- `LOG_LEVEL` - 日志级别（debug/info/warn/error，默认：info）
+- `LISTEN_ADDR` - 监听地址（默认：`:6800`）
+
+## 3. 中间件链
+
+中间件执行顺序（从外到内）：
+1. RequestID - 为每个请求生成唯一 ID
+2. Auth - 验证 Authorization 白名单（如果配置了）
+3. Proxy - 反向代理处理
+
+## 4. 日志记录
+
+### 4.1 日志格式
+- 使用结构化 JSON 日志
+- 输出到标准输出（stdout）
+
+### 4.2 日志内容
+记录以下信息：
+- RequestID - 请求唯一标识
+- Method - HTTP 方法
+- Path - 请求路径
+- Query - 查询参数
+- Headers - 请求头
+- Body - 请求体
+- Authorization - 原始认证头
+- Status - 响应状态码
+- Response Headers - 响应头
+- Response Body - 响应体
+- Latency - 延迟时间（毫秒）
+- Response Size - 响应大小（字节）
+
+### 4.3 日志级别
+- 根据响应状态码自动选择日志级别
+- 4xx 错误使用 warn 级别
+- 5xx 错误使用 error 级别
+- 其他使用 info 级别
+
+## 5. 错误处理
+
+### 5.1 代理错误
+- 代理错误通过 `ErrorHandler` 处理
+- 记录详细的错误信息到日志
+- 返回 `502 Bad Gateway` 状态码给客户端
+
+### 5.2 认证错误
+- 认证失败记录警告日志
+- 返回 `401 Unauthorized` 状态码
+- 记录请求的详细信息用于排查
+
+## 6. 代码组织
+
+- `main.go` - 应用入口
+- `config/` - 配置管理
+- `proxy/` - 反向代理核心逻辑
+- `middleware/` - 中间件（RequestID、Auth）
+- `logger/` - 日志工具
+
+## 7. 功能特性
+
+### 7.1 反向代理
+- 将请求转发到指定的目标服务器
+- 支持所有 HTTP 方法和 WebSocket
+- 自动处理请求头和响应头
+
+### 7.2 Token 替换
+- 如果配置了 `OVERRIDE_AUTH_TOKEN`，自动替换所有请求的 Authorization 头
+- 用于统一使用后端认证 token
+
+### 7.3 认证白名单
+- 如果配置了 `REQUIRED_AUTH_TOKENS`，只允许白名单中的 token 访问
+- 多个 token 用逗号分隔
+- 如果未配置，则不进行认证验证
+
+### 7.4 请求追踪
+- 为每个请求生成唯一的 RequestID
+- RequestID 用于日志追踪和问题排查
