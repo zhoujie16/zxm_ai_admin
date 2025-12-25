@@ -14,6 +14,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - 不需要写兼容性强的代码，除非特别要求
 
+- 接口改动后需更新对应 `server/docs/` 目录下的接口文档
+
+- 接口文档按模块划分目录，一个接口对应一个文档文件
+
 ## 项目概述
 
 ZXM AI Admin 是一个个人工具集合管理平台，采用 Monorepo 结构，包含三个独立服务：

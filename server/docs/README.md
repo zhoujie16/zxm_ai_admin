@@ -18,8 +18,23 @@ docs/
 ├── auth/                  # 认证模块
 │   ├── login.md           # 管理员登录
 │   └── me.md              # 获取当前用户信息
-└── system/                # 系统模块
-    └── health.md          # 健康检查
+├── system/                # 系统模块
+│   └── health.md          # 健康检查
+├── ai-model/              # AI模型管理模块
+│   ├── create.md          # 创建AI模型
+│   ├── list.md            # 获取AI模型列表
+│   ├── get.md             # 获取AI模型详情
+│   ├── update.md          # 更新AI模型
+│   └── delete.md          # 删除AI模型
+├── token/                 # Token管理模块
+│   ├── create.md          # 创建Token
+│   ├── list.md            # 获取Token列表
+│   ├── get.md             # 获取Token详情
+│   ├── update.md          # 更新Token
+│   ├── delete.md          # 删除Token
+│   └── usage.md           # Token使用回调
+└── token-usage-logs/      # Token使用记录模块
+    └── list.md            # 获取Token使用记录列表
 ```
 
 ## 通用说明
@@ -99,9 +114,37 @@ Authorization: Bearer <token>
 
 - [健康检查](./system/health.md)
 
+### 4. AI 模型管理 (`/api/ai-models`)
+
+管理 AI 模型的增删改查操作。
+
+- [创建 AI 模型](./ai-model/create.md)
+- [获取 AI 模型列表](./ai-model/list.md)
+- [获取 AI 模型详情](./ai-model/get.md)
+- [更新 AI 模型](./ai-model/update.md)
+- [删除 AI 模型](./ai-model/delete.md)
+
+### 5. Token 管理 (`/api/tokens`)
+
+管理 Token 的增删改查操作，以及 Token 使用回调接口。
+
+- [创建 Token](./token/create.md)
+- [获取 Token 列表](./token/list.md)
+- [获取 Token 详情](./token/get.md)
+- [更新 Token](./token/update.md)
+- [删除 Token](./token/delete.md)
+- [Token 使用回调](./token/usage.md)
+
+### 6. Token 使用记录 (`/api/token-usage-logs`)
+
+查询 Token 的使用记录。
+
+- [获取 Token 使用记录列表](./token-usage-logs/list.md)
+
 ## 更新日志
 
 - 2024-01-01: 初始版本，添加代理服务管理模块文档
 - 2024-12-25: 添加认证模块和系统模块文档
+- 2024-12-26: 添加 AI 模型管理、Token 管理、Token 使用记录模块文档
 
 

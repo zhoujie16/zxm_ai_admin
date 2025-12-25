@@ -35,10 +35,16 @@ export default [
         component: './config/proxy-service',
       },
       {
-        path: '/config/model',
+        path: '/config/ai-model',
         name: '模型管理',
         icon: 'RobotOutlined',
-        component: './config/model',
+        component: './config/ai-model',
+      },
+      {
+        path: '/config/token',
+        name: 'Token 管理',
+        icon: 'KeyOutlined',
+        component: './config/token',
       },
     ],
   },

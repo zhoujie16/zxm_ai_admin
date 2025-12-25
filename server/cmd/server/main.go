@@ -154,6 +154,37 @@ func setupRoutes(r *gin.Engine) {
 			proxyServices.PUT("/:id", proxyServiceHandler.UpdateProxyService)
 			proxyServices.DELETE("/:id", proxyServiceHandler.DeleteProxyService)
 		}
+
+		// AI 模型相关（需要认证）
+		aiModelHandler := handlers.NewAIModelHandler()
+		aiModels := api.Group("/ai-models")
+		aiModels.Use(middleware.AuthMiddleware())
+		{
+			aiModels.POST("", aiModelHandler.CreateAIModel)
+			aiModels.GET("", aiModelHandler.ListAIModels)
+			aiModels.GET("/:id", aiModelHandler.GetAIModel)
+			aiModels.PUT("/:id", aiModelHandler.UpdateAIModel)
+			aiModels.DELETE("/:id", aiModelHandler.DeleteAIModel)
+		}
+
+		// Token 相关（需要认证）
+		tokenHandler := handlers.NewTokenHandler()
+		tokens := api.Group("/tokens")
+		tokens.Use(middleware.AuthMiddleware())
+		{
+			tokens.POST("", tokenHandler.CreateToken)
+			tokens.GET("", tokenHandler.ListTokens)
+			tokens.GET("/:id", tokenHandler.GetToken)
+			tokens.PUT("/:id", tokenHandler.UpdateToken)
+			tokens.DELETE("/:id", tokenHandler.DeleteToken)
+		}
+
+		// Token 使用记录相关
+		tokenUsageHandler := handlers.NewTokenUsageHandler()
+		// 外部回调接口（无需认证）
+		api.POST("/token/usage", tokenUsageHandler.RecordUsage)
+		// 管理端查询使用记录（需要认证）
+		api.GET("/token-usage-logs", middleware.AuthMiddleware(), tokenUsageHandler.ListUsageLogs)
 	}
 }
 

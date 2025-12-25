@@ -56,8 +56,11 @@ func Init() error {
 func autoMigrate() error {
 	if err := DB.AutoMigrate(
 		&models.ProxyService{},
+		&models.AIModel{},
+		&models.Token{},
+		&models.TokenUsageLog{},
 	); err != nil {
-		return fmt.Errorf("迁移代理服务表失败: %w", err)
+		return fmt.Errorf("数据库迁移失败: %w", err)
 	}
 	return nil
 }
