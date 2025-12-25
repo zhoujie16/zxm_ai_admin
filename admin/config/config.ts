@@ -12,8 +12,8 @@ import routes from './routes';
  * @description 部署时的路径，如果部署在非根目录下，需要配置这个变量
  * @doc https://umijs.org/docs/api/config#publicpath
  */
-const PUBLIC_PATH: string = '/zxm-toolkit-admin/';
-const BASE_PATH: string = '/zxm-toolkit-admin';
+const PUBLIC_PATH: string = '/zxm-ai-admin/';
+const BASE_PATH: string = '/zxm-ai-admin';
 
 // 计算项目根目录路径（从 apps/admin/config 向上三级到项目根目录）
 const ROOT_DIR = resolve(__dirname, '../../..');

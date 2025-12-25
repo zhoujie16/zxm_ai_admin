@@ -127,11 +127,9 @@ export const errorConfig: RequestConfig = {
   responseInterceptors: [
     response => {
       // 拦截响应数据，进行个性化处理
-      const { data } = response as unknown as ResponseStructure;
-
-      if (data?.success === false) {
-        message.error('请求失败！');
-      }
+      // 注意：UmiJS 的 request 默认返回 response.data
+      // 后端返回格式：{ code, message, data }
+      // 这里不做转换，保持原始格式，由业务层统一处理
       return response;
     },
   ],

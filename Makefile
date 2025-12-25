@@ -20,7 +20,7 @@ help:
 # 安装所有依赖
 install:
 	@echo "安装前端依赖..."
-	cd admin && yarn install
+	cd admin && pnpm install
 	@echo "安装后端依赖..."
 	cd server && go mod download
 	@echo "安装代理服务依赖..."
@@ -38,7 +38,7 @@ dev:
 # 仅启动前端
 dev-admin:
 	@echo "启动前端开发服务器..."
-	cd admin && yarn dev
+	cd admin && pnpm dev
 
 # 仅启动后端
 dev-server:
@@ -53,7 +53,7 @@ dev-proxy:
 # 构建所有项目
 build:
 	@echo "构建前端..."
-	cd admin && yarn build
+	cd admin && pnpm build
 	@echo "构建后端..."
 	cd server && go build -o bin/server cmd/server/main.go
 	@echo "构建代理服务..."
@@ -62,7 +62,7 @@ build:
 
 # 构建前端
 build-admin:
-	cd admin && yarn build
+	cd admin && pnpm build
 
 # 构建后端
 build-server:

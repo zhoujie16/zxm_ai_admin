@@ -22,6 +22,26 @@ export default [
     icon: 'HomeOutlined',
     component: './home',
   },
+  // 配置管理
+  {
+    path: '/config',
+    name: '配置管理',
+    icon: 'SettingOutlined',
+    routes: [
+      {
+        path: '/config/proxy-service',
+        name: '代理服务管理',
+        icon: 'CloudServerOutlined',
+        component: './config/proxy-service',
+      },
+      {
+        path: '/config/model',
+        name: '模型管理',
+        icon: 'RobotOutlined',
+        component: './config/model',
+      },
+    ],
+  },
 
   // 404页面
   {

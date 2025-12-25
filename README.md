@@ -19,7 +19,7 @@ zxm_ai_admin/
 
 - **Node.js** >= 20.0.0
 - **Go** >= 1.21
-- **Yarn** >= 1.22.22
+- **pnpm** >= 8.0.0
 
 ### 安装依赖
 
@@ -32,7 +32,7 @@ make install
 
 ```bash
 # 前端依赖
-cd admin && yarn install
+cd admin && pnpm install
 
 # 后端依赖
 cd server && go mod download
@@ -60,7 +60,7 @@ make dev-proxy   # 代理服务
 
 ```bash
 # 终端1: 启动前端
-cd admin && yarn dev
+cd admin && pnpm dev
 
 # 终端2: 启动后端
 cd server && go run cmd/server/main.go

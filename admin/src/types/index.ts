@@ -15,97 +15,50 @@ export interface ILoginFormData {
 // ==================== API 响应类型 ====================
 
 /**
- * 通用 API 响应类型
+ * 后端实际返回的响应格式
  */
-export interface IApiResponse<T = any> {
-  /** 请求是否成功 */
-  success: boolean;
+export interface IBackendResponse<T = any> {
+  /** 响应码，0 表示成功，其他表示失败 */
+  code: number;
+  /** 响应消息 */
+  message: string;
   /** 响应数据 */
   data?: T;
-  /** 响应消息 */
-  message: string;
+}
+
+// ==================== 代理服务相关类型 ====================
+
+/**
+ * 代理服务数据类型
+ */
+export interface IProxyService {
+  /** 代理服务ID */
+  id: number;
+  /** 服务标识 */
+  service_id: string;
+  /** 服务器IP地址 */
+  server_ip: string;
+  /** 状态：1=启用，0=未启用 */
+  status: number;
+  /** 备注 */
+  remark?: string;
+  /** 创建时间 */
+  created_at: string;
+  /** 更新时间 */
+  updated_at: string;
 }
 
 /**
- * 嵌套的 API 响应类型（实际API返回的结构）
+ * 创建/更新代理服务表单数据
  */
-export interface INestedApiResponse<T = any> {
-  /** 请求是否成功 */
-  success: boolean;
-  /** 嵌套的响应数据 */
-  data?: {
-    /** 实际数据 */
-    data?: T;
-  };
-  /** 响应消息 */
-  message: string;
-}
-
-/**
- * 分页响应类型
- */
-export interface IPaginationResponse<T = any> {
-  /** 请求是否成功 */
-  success: boolean;
-  /** 数据列表 */
-  data?: T[];
-  /** 分页信息 */
-  pagination?: {
-    /** 当前页码 */
-    page: number;
-    /** 每页数量 */
-    limit: number;
-    /** 总记录数 */
-    total: number;
-    /** 总页数 */
-    totalPages: number;
-  };
-  /** 响应消息 */
-  message: string;
-}
-
-/**
- * 嵌套的分页响应类型（实际API返回的结构）
- */
-export interface INestedPaginationResponse<T = any> {
-  /** 请求是否成功 */
-  success: boolean;
-  /** 嵌套的响应数据 */
-  data?: {
-    /** 数据列表 */
-    data?: T[];
-    /** 分页信息 */
-    pagination?: {
-      /** 当前页码 */
-      page: number;
-      /** 每页数量 */
-      limit: number;
-      /** 总记录数 */
-      total: number;
-      /** 总页数 */
-      totalPages: number;
-    };
-  };
-  /** 响应消息 */
-  message: string;
-}
-
-/**
- * API 列表响应结构
- */
-export interface IApiListResponse<T = any> {
-  /** 数据列表 */
-  data: T[];
-  /** 分页信息 */
-  pagination: {
-    /** 当前页码 */
-    page: number;
-    /** 每页数量 */
-    limit: number;
-    /** 总记录数 */
-    total: number;
-    /** 总页数 */
-    totalPages: number;
-  };
+export interface IProxyServiceFormData {
+  /** 服务标识 */
+  service_id?: string;
+  /** 服务器IP地址 */
+  server_ip?: string;
+  /** 状态：1=启用，0=未启用 */
+  status?: number;
+  /** 备注 */
+  remark?: string;
 }
 

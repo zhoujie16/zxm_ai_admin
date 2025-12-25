@@ -7,10 +7,10 @@
     "analyze": "cross-env ANALYZE=1 max build",
     "format": "prettier --write .",
     "build": "max build",
-    "dev": "yarn start:dev",
+    "dev": "pnpm start:dev",
     "postinstall": "max setup",
-    "lint": "yarn tsc",
-    "preview": "yarn build && max preview --port 8000",
+    "lint": "pnpm tsc",
+    "preview": "pnpm build && max preview --port 8000",
     "serve": "umi-serve",
     "start": "cross-env UMI_ENV=dev PORT=6806 max dev",
     "start:dev": "cross-env MOCK=none UMI_ENV=dev PORT=6806 max dev",
@@ -45,6 +45,8 @@
     "umi-serve": "^1.9.11"
   },
   "engines": {
-    "node": ">=20.0.0"
-  }
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0"
 }
