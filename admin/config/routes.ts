@@ -41,6 +41,12 @@ export default [
     icon: 'KeyOutlined',
     component: './token',
   },
+  {
+    path: '/token-usage-log',
+    name: '使用记录',
+    icon: 'FileTextOutlined',
+    component: './token-usage-log',
+  },
 
   // 404页面
   {

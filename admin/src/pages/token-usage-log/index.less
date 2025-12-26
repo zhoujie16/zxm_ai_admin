@@ -1,0 +1,64 @@
+/**
+ * Token 使用记录页面样式
+ */
+.token-usage-log-page {
+  .token-usage-log-filter {
+    margin-bottom: 16px;
+  }
+
+  .token-usage-log-table {
+    .status-tag {
+      &.success {
+        color: #52c41a;
+      }
+
+      &.warning {
+        color: #faad14;
+      }
+
+      &.error {
+        color: #ff4d4f;
+      }
+    }
+
+    .method-tag {
+      &.GET {
+        color: #1890ff;
+        background: #e6f7ff;
+        border-color: #91d5ff;
+      }
+
+      &.POST {
+        color: #52c41a;
+        background: #f6ffed;
+        border-color: #b7eb8f;
+      }
+
+      &.PUT {
+        color: #faad14;
+        background: #fffbe6;
+        border-color: #ffe58f;
+      }
+
+      &.DELETE {
+        color: #ff4d4f;
+        background: #fff1f0;
+        border-color: #ffccc7;
+      }
+    }
+
+    .latency-badge {
+      &.fast {
+        color: #52c41a;
+      }
+
+      &.normal {
+        color: #faad14;
+      }
+
+      &.slow {
+        color: #ff4d4f;
+      }
+    }
+  }
+}
