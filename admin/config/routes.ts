@@ -22,31 +22,24 @@ export default [
     icon: 'HomeOutlined',
     component: './home',
   },
-  // 配置管理
+  // 配置管理菜单（一级）
   {
-    path: '/config',
-    name: '配置管理',
-    icon: 'SettingOutlined',
-    routes: [
-      {
-        path: '/config/proxy-service',
-        name: '代理服务管理',
-        icon: 'CloudServerOutlined',
-        component: './config/proxy-service',
-      },
-      {
-        path: '/config/ai-model',
-        name: '模型管理',
-        icon: 'RobotOutlined',
-        component: './config/ai-model',
-      },
-      {
-        path: '/config/token',
-        name: 'Token 管理',
-        icon: 'KeyOutlined',
-        component: './config/token',
-      },
-    ],
+    path: '/proxy-service',
+    name: '代理服务管理',
+    icon: 'CloudServerOutlined',
+    component: './proxy-service',
+  },
+  {
+    path: '/ai-model',
+    name: '模型管理',
+    icon: 'RobotOutlined',
+    component: './ai-model',
+  },
+  {
+    path: '/token',
+    name: 'Token 管理',
+    icon: 'KeyOutlined',
+    component: './token',
   },
 
   // 404页面
