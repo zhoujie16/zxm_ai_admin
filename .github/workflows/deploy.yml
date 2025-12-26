@@ -59,9 +59,7 @@ jobs:
         run: |
           cd server
           mkdir -p ../server-package/bin
-          mkdir -p ../server-package/configs
           cp bin/server ../server-package/bin/
-          cp configs/config.yaml ../server-package/configs/
           cd ..
           tar -czf server.tar.gz -C server-package .
 
@@ -95,9 +93,14 @@ jobs:
             echo "✅ admin 前端部署完成"
             
             # 部署 server 后端
-            mkdir -p /home/server/zxm_ai_admin
-            rm -rf /home/server/zxm_ai_admin/*
+            mkdir -p /home/server/zxm_ai_admin/bin
+            mkdir -p /home/server/zxm_ai_admin/configs
+            mkdir -p /home/server/zxm_ai_admin/data
+            mkdir -p /home/server/zxm_ai_admin/logs
+            
+            # 解压新版本（只包含 bin 目录，不会覆盖 configs）
             tar -xzf server.tar.gz -C /home/server/zxm_ai_admin
+            
             chmod +x /home/server/zxm_ai_admin/bin/server
             rm -f server.tar.gz
             
