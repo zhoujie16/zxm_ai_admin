@@ -27,6 +27,11 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: 'admin/pnpm-lock.yaml'
 
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
       - name: Install dependencies
         run: |
           cd admin
@@ -40,6 +45,26 @@ jobs:
       - name: Package admin artifact
         run: tar -czf admin.tar.gz -C admin/dist .
 
+      - name: Install Go dependencies
+        run: |
+          cd server
+          go mod download
+
+      - name: Build server binary
+        run: |
+          cd server
+          GOOS=linux GOARCH=amd64 go build -o bin/server cmd/server/main.go
+
+      - name: Package server artifact
+        run: |
+          cd server
+          mkdir -p ../server-package/bin
+          mkdir -p ../server-package/configs
+          cp bin/server ../server-package/bin/
+          cp configs/config.yaml ../server-package/configs/
+          cd ..
+          tar -czf server.tar.gz -C server-package .
+
       - name: Upload packages to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -47,7 +72,7 @@ jobs:
           username: ${{ secrets.REMOTE_USER }}
           password: ${{ secrets.REMOTE_PASSWORD }}
           port: 22
-          source: "admin.tar.gz"
+          source: "admin.tar.gz,server.tar.gz"
           target: "/www/wwwroot/w.abczzz.cn/tmp"
 
       - name: Deploy on server
@@ -68,5 +93,14 @@ jobs:
             rm -f admin.tar.gz
             
             echo "✅ admin 前端部署完成"
+            
+            # 部署 server 后端
+            mkdir -p /home/server/zxm_ai_admin
+            rm -rf /home/server/zxm_ai_admin/*
+            tar -xzf server.tar.gz -C /home/server/zxm_ai_admin
+            chmod +x /home/server/zxm_ai_admin/bin/server
+            rm -f server.tar.gz
+            
+            echo "✅ server 后端部署完成"
 
 
