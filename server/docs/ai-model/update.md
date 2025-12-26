@@ -23,9 +23,9 @@ Content-Type: application/json
 
 | 参数名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
-| model_key | string | 否 | 模型Key，最大长度100 |
 | model_name | string | 否 | 模型名称，最大长度100 |
 | api_url | string | 否 | API地址，最大长度500 |
+| api_key | string | 否 | API Key，最大长度255 |
 | status | int | 否 | 状态：1=启用，0=禁用 |
 | remark | string | 否 | 备注，最大长度500 |
 
@@ -33,9 +33,9 @@ Content-Type: application/json
 
 ```json
 {
-  "model_key": "gpt-4-turbo",
   "model_name": "GPT-4 Turbo",
   "api_url": "https://api.openai.com/v1",
+  "api_key": "sk-new-key",
   "status": 1,
   "remark": "更新后的备注"
 }
@@ -51,9 +51,9 @@ Content-Type: application/json
   "message": "success",
   "data": {
     "id": 1,
-    "model_key": "gpt-4-turbo",
     "model_name": "GPT-4 Turbo",
     "api_url": "https://api.openai.com/v1",
+    "api_key": "sk-new-key",
     "status": 1,
     "remark": "更新后的备注",
     "created_at": "2024-12-26T00:00:00Z",

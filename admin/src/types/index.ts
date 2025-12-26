@@ -70,12 +70,12 @@ export interface IProxyServiceFormData {
 export interface IAIModel {
   /** 模型ID */
   id: number;
-  /** 模型Key */
-  model_key: string;
   /** 模型名称 */
   model_name: string;
   /** API地址 */
   api_url: string;
+  /** API Key */
+  api_key: string;
   /** 状态：1=启用，0=禁用 */
   status: number;
   /** 备注 */
@@ -90,12 +90,12 @@ export interface IAIModel {
  * 创建/更新 AI 模型表单数据
  */
 export interface IAIModelFormData {
-  /** 模型Key */
-  model_key?: string;
   /** 模型名称 */
   model_name?: string;
   /** API地址 */
   api_url?: string;
+  /** API Key */
+  api_key?: string;
   /** 状态：1=启用，0=禁用 */
   status?: number;
   /** 备注 */
@@ -114,6 +114,8 @@ export interface IToken {
   token: string;
   /** 关联的AI模型ID */
   ai_model_id: number;
+  /** 关联的AI模型名称 */
+  model_name?: string;
   /** 关联订单号 */
   order_no?: string;
   /** 状态：1=启用，0=禁用 */
@@ -146,33 +148,5 @@ export interface ITokenFormData {
   usage_limit?: number;
   /** 备注 */
   remark?: string;
-}
-
-// ==================== Token 使用记录相关类型 ====================
-
-/**
- * Token 使用记录数据类型
- */
-export interface ITokenUsageLog {
-  /** 记录ID */
-  id: number;
-  /** Token 值 */
-  token: string;
-  /** 请求来源IP */
-  remote_ip: string;
-  /** User Agent */
-  user_agent: string;
-  /** 调用时间 */
-  call_time: string;
-  /** 创建时间 */
-  created_at: string;
-}
-
-/**
- * Token 使用记录列表响应
- */
-export interface ITokenUsageLogListResponse {
-  total: number;
-  list: ITokenUsageLog[];
 }
 

@@ -114,3 +114,65 @@ func (h *TokenHandler) DeleteToken(c *gin.Context) {
 
 	utils.Success(c, nil)
 }
+
+// ListAllTokensWithModel 获取所有 Token 及其完整模型信息（不分页）
+func (h *TokenHandler) ListAllTokensWithModel(c *gin.Context) {
+	list, err := h.tokenService.ListAllTokensWithModel()
+	if err != nil {
+		utils.InternalServerError(c, err.Error())
+		return
+	}
+
+	utils.Success(c, list)
+}
+
+// ListRecycledTokens 获取回收站 Token 列表
+func (h *TokenHandler) ListRecycledTokens(c *gin.Context) {
+	var req services.ListRecycledTokensRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		utils.BadRequest(c, "参数错误: "+err.Error())
+		return
+	}
+
+	response, err := h.tokenService.ListRecycledTokens(&req)
+	if err != nil {
+		utils.InternalServerError(c, err.Error())
+		return
+	}
+
+	utils.Success(c, response)
+}
+
+// RestoreToken 恢复已删除的 Token
+func (h *TokenHandler) RestoreToken(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		utils.BadRequest(c, "无效的ID")
+		return
+	}
+
+	if err := h.tokenService.RestoreToken(uint(id)); err != nil {
+		utils.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.Success(c, nil)
+}
+
+// DestroyToken 永久删除 Token
+func (h *TokenHandler) DestroyToken(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		utils.BadRequest(c, "无效的ID")
+		return
+	}
+
+	if err := h.tokenService.DestroyToken(uint(id)); err != nil {
+		utils.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.Success(c, nil)
+}

@@ -18,7 +18,7 @@ Authorization: Bearer <token>
 |--------|------|------|------|
 | page | int | 否 | 页码，从1开始，默认为1 |
 | page_size | int | 否 | 每页数量，默认为10，最大100 |
-| keyword | string | 否 | 搜索关键词（模糊匹配 model_key 或 model_name） |
+| keyword | string | 否 | 搜索关键词（模糊匹配 model_name） |
 
 ## 请求示例
 
@@ -39,9 +39,9 @@ GET /api/ai-models?page=1&page_size=10&keyword=gpt
     "list": [
       {
         "id": 1,
-        "model_key": "gpt-4",
         "model_name": "GPT-4",
         "api_url": "https://api.openai.com/v1",
+        "api_key": "sk-xxxxxxx",
         "status": 1,
         "remark": "OpenAI GPT-4 模型",
         "created_at": "2024-12-26T00:00:00Z",
@@ -49,9 +49,9 @@ GET /api/ai-models?page=1&page_size=10&keyword=gpt
       },
       {
         "id": 2,
-        "model_key": "gpt-3.5-turbo",
         "model_name": "GPT-3.5 Turbo",
         "api_url": "https://api.openai.com/v1",
+        "api_key": "sk-xxxxxxx",
         "status": 1,
         "remark": "OpenAI GPT-3.5 模型",
         "created_at": "2024-12-26T01:00:00Z",

@@ -2,7 +2,7 @@
  * Token 表单组件
  * 功能：创建和编辑 Token 的表单
  */
-import { DatePicker, Descriptions, Form, Input, InputNumber, Modal, Select, Switch, Typography } from 'antd';
+import { DatePicker, Descriptions, Form, Input, InputNumber, Modal, Select, Space, Switch, Typography } from 'antd';
 
 const { Text } = Typography;
 
@@ -153,7 +153,7 @@ const TokenForm: React.FC<ITokenFormProps> = ({
             showSearch
             optionFilterProp="label"
             options={models.map((m) => ({
-              label: `${m.model_name} (${m.model_key})`,
+              label: m.model_name,
               value: m.id,
             }))}
           />
@@ -177,12 +177,14 @@ const TokenForm: React.FC<ITokenFormProps> = ({
           rules={[{ required: true, message: '请输入使用限额' }]}
           tooltip="设置为 0 表示无限制"
         >
-          <InputNumber
-            placeholder="请输入使用限额"
-            min={0}
-            style={{ width: '100%' }}
-            addonAfter="次"
-          />
+          <Space.Compact style={{ width: '100%' }}>
+            <InputNumber
+              placeholder="请输入使用限额"
+              min={0}
+              style={{ width: '100%' }}
+            />
+            <Input style={{ width: 50 }} readOnly value="次" />
+          </Space.Compact>
         </Form.Item>
 
         <Form.Item

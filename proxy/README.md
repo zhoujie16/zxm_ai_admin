@@ -1,12 +1,12 @@
 # Proxy 代理服务
 
-一个基于 Go 语言开发的高性能 HTTP 反向代理服务，支持请求转发、认证白名单、请求追踪和结构化日志记录。
+一个基于 Go 语言开发的高性能 HTTP 反向代理服务，支持请求转发、认证白名单、请求追踪、结构化日志记录和 **token 动态路由**。
 
 ## 功能特性
 
 - 🔄 **反向代理** - 将请求转发到指定的目标服务器
-- 🔐 **认证白名单** - 支持基于 Authorization 头的请求白名单验证
-- 🔑 **Token 替换** - 自动替换请求中的 Authorization 头为指定值
+- 🎯 **Token 动态路由** - 根据请求的 Authorization token 自动选择目标服务器和 API Key
+- 🔄 **定时同步** - 每 10 分钟自动从后端同步 token-模型配置
 - 📝 **请求追踪** - 为每个请求生成唯一的 RequestID，便于追踪和调试
 - 📊 **结构化日志** - 使用 JSON 格式记录详细的请求和响应信息
 - ⚡ **高性能** - 基于 Go 标准库 `net/http/httputil` 实现，性能优异
@@ -32,15 +32,21 @@ go mod download
 
 ### 配置
 
-通过环境变量配置服务，所有配置项都有默认值：
+通过环境变量配置服务：
 
 | 环境变量 | 说明 | 默认值 |
 |---------|------|--------|
-| `TARGET_URL` | 目标转发地址 | `https://open.bigmodel.cn` |
-| `OVERRIDE_AUTH_TOKEN` | 替换的 Authorization 头 | `Bearer xxxxx` |
-| `REQUIRED_AUTH_TOKENS` | Authorization 白名单（逗号分隔） | `Bearer 123456,Bearer abcdef` |
+| `ENABLE_TOKEN_ROUTING` | 是否启用 token 动态路由 | `true` |
+| `SERVER_API_URL` | 后端 API 地址 | `http://localhost:6808` |
+| `SERVER_API_TOKEN` | 后端 API 认证 Token | （空） |
+| `SYNC_INTERVAL` | 缓存同步间隔（分钟） | `10` |
 | `LOG_LEVEL` | 日志级别 (debug/info/warn/error) | `info` |
 | `LISTEN_ADDR` | 监听地址 | `:6800` |
+
+以下为兼容旧版本的配置项（已废弃）：
+| `TARGET_URL` | 目标转发地址 | `https://open.bigmodel.cn` |
+| `OVERRIDE_AUTH_TOKEN` | 替换的 Authorization 头 | （空） |
+| `REQUIRED_AUTH_TOKENS` | Authorization 白名单 | （空） |
 
 ### 运行服务
 
@@ -49,11 +55,9 @@ go mod download
 go run main.go
 
 # 或使用环境变量
-export TARGET_URL=https://api.example.com
-export OVERRIDE_AUTH_TOKEN="Bearer your-token"
-export REQUIRED_AUTH_TOKENS="Bearer token1,Bearer token2"
-export LOG_LEVEL=debug
-export LISTEN_ADDR=:9090
+export SERVER_API_URL=http://localhost:6808
+export SERVER_API_TOKEN=your-admin-token
+export SYNC_INTERVAL=10
 go run main.go
 ```
 
@@ -67,42 +71,43 @@ go build -o bin/proxy main.go
 ./bin/proxy
 ```
 
-## 使用示例
+## Token 动态路由
 
-### 基本使用
+### 工作原理
 
-```bash
-# 启动代理服务（转发到 https://api.example.com）
-export TARGET_URL=https://api.example.com
-go run main.go
+1. **配置同步** - 服务启动时从后端 API `/api/tokens/with-model` 获取 token-模型列表
+2. **定时刷新** - 每隔指定时间（默认 10 分钟）自动同步最新配置
+3. **请求处理** - 收到请求时，根据 `Authorization` 头查找对应的模型配置
+4. **动态转发** - 使用配置的 `ai_model_api_url` 作为目标，`ai_model_api_key` 作为认证
+
+### API 响应格式
+
+后端 API 需返回以下格式：
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": [
+    {
+      "token_id": 1,
+      "token": "sk-xxx",
+      "token_status": 1,
+      "ai_model_id": 1,
+      "ai_model_name": "DeepSeek",
+      "ai_model_api_url": "https://api.deepseek.com",
+      "ai_model_api_key": "sk-api-key",
+      "ai_model_status": 1
+    }
+  ]
+}
 ```
 
-### 启用认证白名单
+### 缓存策略
 
-```bash
-# 只允许指定的 Authorization token 访问
-export REQUIRED_AUTH_TOKENS="Bearer secret-token-1,Bearer secret-token-2"
-go run main.go
-```
-
-### 替换 Authorization 头
-
-```bash
-# 将所有请求的 Authorization 头替换为指定值
-export OVERRIDE_AUTH_TOKEN="Bearer your-backend-token"
-go run main.go
-```
-
-### 完整配置示例
-
-```bash
-export TARGET_URL=https://api.example.com
-export OVERRIDE_AUTH_TOKEN="Bearer backend-secret-token"
-export REQUIRED_AUTH_TOKENS="Bearer client-token-1,Bearer client-token-2"
-export LOG_LEVEL=debug
-export LISTEN_ADDR=:6800
-go run main.go
-```
+- **同步失败** - 保留上一次缓存，继续服务
+- **状态过滤** - 只缓存 `token_status=1` 且 `ai_model_status=1` 的记录
+- **Token 验证** - 不在缓存中的 token 直接返回 401
 
 ## 项目结构
 
@@ -111,11 +116,13 @@ proxy/
 ├── main.go              # 应用入口
 ├── config/
 │   └── config.go        # 配置管理
+├── cache/
+│   └── token_cache.go   # token 缓存管理
 ├── proxy/
 │   ├── proxy.go         # 反向代理核心逻辑
 │   └── response.go      # 响应包装器
 ├── middleware/
-│   ├── auth.go          # 认证中间件
+│   ├── auth.go          # 认证中间件（已废弃）
 │   └── requestid.go     # 请求ID中间件
 ├── logger/
 │   └── logger.go        # 日志工具
@@ -127,15 +134,16 @@ proxy/
 
 ### 请求处理流程
 
-1. **RequestID 中间件** - 为每个请求生成唯一的 RequestID
-2. **Auth 中间件** - 验证请求的 Authorization 头是否在白名单中（如果配置了白名单）
-3. **Proxy 处理器** - 将请求转发到目标服务器，并替换 Authorization 头（如果配置了）
-4. **日志记录** - 记录请求和响应的详细信息
+```
+请求 → RequestID → Token 缓存查找 →
+  ├─ 找到: 替换 Authorization → 转发到对应 API URL
+  └─ 未找到: 返回 401
+```
 
 ### 中间件链
 
 ```
-RequestID -> Auth -> Proxy
+RequestID → Token 路由 → 动态代理
 ```
 
 ### 日志记录
@@ -147,113 +155,54 @@ RequestID -> Auth -> Proxy
 - **性能指标**: 延迟时间 (latency_ms), 响应大小 (response_size_bytes)
 - **追踪信息**: RequestID
 
-日志格式为 JSON，便于日志收集和分析。
-
-## 配置说明
-
-### TARGET_URL
-
-目标服务器的完整 URL，例如：
-- `https://api.example.com`
-- `http://localhost:3000`
-
-### OVERRIDE_AUTH_TOKEN
-
-如果设置了此值，所有转发到目标服务器的请求都会使用此值替换原始的 Authorization 头。这对于统一使用后端认证 token 的场景很有用。
-
-### REQUIRED_AUTH_TOKENS
-
-Authorization 白名单，多个值用逗号分隔。如果配置了此值，只有 Authorization 头匹配白名单中任一值的请求才会被转发。
-
-**注意**: 如果此值为空，则不进行认证验证，所有请求都会被转发。
-
-### LOG_LEVEL
-
-日志级别，可选值：
-- `debug` - 调试信息
-- `info` - 一般信息（默认）
-- `warn` - 警告信息
-- `error` - 错误信息
-
-### LISTEN_ADDR
-
-服务监听地址，格式为 `:端口号` 或 `IP:端口号`，例如：
-- `:6800` - 监听所有网络接口的 6800 端口
-- `127.0.0.1:6800` - 只监听本地回环地址的 6800 端口
-
 ## 使用场景
 
-1. **API 网关** - 作为多个后端服务的统一入口
-2. **认证代理** - 统一管理 API 认证 token
-3. **请求转发** - 将请求转发到不同的后端服务
+1. **多模型统一入口** - 一个代理服务转发到多个 AI 模型 API
+2. **动态路由** - 根据 client token 自动选择目标模型
+3. **认证隔离** - 客户端 token 与模型 API Key 分离管理
 4. **请求追踪** - 通过 RequestID 追踪完整的请求链路
-5. **日志收集** - 集中收集和记录所有请求日志
 
 ## 安全建议
 
 1. **生产环境配置**
-   - 修改默认的 `OVERRIDE_AUTH_TOKEN` 为安全的 token
-   - 配置 `REQUIRED_AUTH_TOKENS` 限制访问
-   - 将 `LOG_LEVEL` 设置为 `info` 或 `warn`，避免泄露敏感信息
+   - 设置 `SERVER_API_TOKEN` 保护后端 API 调用
+   - 将 `LOG_LEVEL` 设置为 `info` 或 `warn`
+   - 使用 HTTPS 后端 API
 
 2. **网络安全**
-   - 使用 HTTPS 目标服务器（`TARGET_URL` 使用 `https://`）
    - 在生产环境中使用反向代理（如 Nginx）提供 HTTPS
    - 配置防火墙规则限制访问
 
 3. **日志安全**
-   - 注意日志中可能包含敏感信息（如 Authorization token）
+   - 注意日志中可能包含敏感信息
    - 定期清理日志文件
-   - 使用日志收集工具时注意数据脱敏
 
 ## 常见问题
 
-### Q: 如何禁用认证白名单？
+### Q: Token 不在缓存中会发生什么？
 
-A: 不设置 `REQUIRED_AUTH_TOKENS` 环境变量，或设置为空字符串。
+A: 返回 `401 Unauthorized` 错误，拒绝请求。
 
-### Q: 如何查看详细的请求日志？
+### Q: 后端 API 不可用时会影响服务吗？
 
-A: 设置 `LOG_LEVEL=debug` 环境变量。
+A: 不会。同步失败时保留上一次缓存，继续使用旧配置提供服务。
 
-### Q: 如何修改监听端口？
+### Q: 如何修改同步间隔？
 
-A: 设置 `LISTEN_ADDR` 环境变量，例如 `export LISTEN_ADDR=:9090`。
-
-### Q: 代理服务支持 WebSocket 吗？
-
-A: 支持，响应包装器实现了 `Hijack` 方法，可以支持 WebSocket 连接。
-
-### Q: 如何处理代理错误？
-
-A: 代理错误会被记录到日志中，并返回 `502 Bad Gateway` 状态码给客户端。
-
-## 开发规范
-
-项目遵循严格的开发规范，详细说明请参考 [.cursor/rules/base.mdc](../server/.cursor/rules/base.mdc)
-
-### 主要规范
-
-- **分层架构**: 配置、中间件、代理逻辑分离
-- **错误处理**: 所有错误都要记录日志
-- **代码注释**: 公开函数、类型、变量必须有注释
-- **命名规范**: 遵循 Go 语言命名约定
-
-## 许可证
-
-本项目为内部项目，仅供内部使用。
+A: 设置 `SYNC_INTERVAL` 环境变量，单位为分钟。
 
 ## 更新日志
 
-### v1.0.0 (2024-01-01)
+### v2.0.0 (2025-01)
+
+- ✨ 新增 token 动态路由功能
+- ✨ 新增定时缓存同步
+- ✨ 新增多目标代理池
+- 🗑️ 废弃固定白名单认证方式
+
+### v1.0.0 (2024-01)
 
 - ✨ 初始版本发布
 - ✨ 实现反向代理功能
 - ✨ 实现认证白名单功能
 - ✨ 实现请求追踪功能
-- ✨ 实现结构化日志记录
-
-## 贡献
-
-如有问题或建议，请联系项目维护者。
-

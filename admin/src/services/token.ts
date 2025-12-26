@@ -67,3 +67,40 @@ export async function deleteToken(id: number) {
     showSuccessMessage: true,
   });
 }
+
+/**
+ * 获取回收站 Token 列表
+ * @param page 页码
+ * @param page_size 每页数量
+ * @param keyword 关键词
+ * @returns 列表数据
+ */
+export async function getRecycledTokenList(page: number = 1, page_size: number = 10, keyword?: string) {
+  return get<ITokenListResponse>('/api/tokens/recycle', {
+    page,
+    page_size,
+    keyword,
+  });
+}
+
+/**
+ * 恢复已删除的 Token
+ * @param id Token ID
+ * @returns 恢复结果
+ */
+export async function restoreToken(id: number) {
+  return post(`/api/tokens/${id}/restore`, undefined, {
+    showSuccessMessage: true,
+  });
+}
+
+/**
+ * 永久删除 Token
+ * @param id Token ID
+ * @returns 删除结果
+ */
+export async function destroyToken(id: number) {
+  return del(`/api/tokens/${id}/destroy`, undefined, {
+    showSuccessMessage: true,
+  });
+}

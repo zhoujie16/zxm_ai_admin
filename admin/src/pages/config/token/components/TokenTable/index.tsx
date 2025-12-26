@@ -4,7 +4,7 @@
  */
 import { Button, Popconfirm, Space, Table, Tag, Typography } from 'antd';
 import { ColumnsType } from 'antd/es/table';
-import { EditOutlined, DeleteOutlined, HistoryOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import React, { useMemo } from 'react';
 import type { IToken } from '@/types';
 
@@ -30,8 +30,6 @@ export interface ITokenTableProps {
   onEdit: (record: IToken) => void;
   /** 删除回调 */
   onDelete: (id: number) => void;
-  /** 查看使用记录回调 */
-  onViewUsage: (record: IToken) => void;
 }
 
 /**
@@ -56,7 +54,6 @@ const TokenTable: React.FC<ITokenTableProps> = ({
   onPageChange,
   onEdit,
   onDelete,
-  onViewUsage,
 }) => {
   /**
    * 表格列定义
@@ -81,10 +78,12 @@ const TokenTable: React.FC<ITokenTableProps> = ({
         ),
       },
       {
-        title: '关联模型ID',
-        dataIndex: 'ai_model_id',
-        key: 'ai_model_id',
-        width: 110,
+        title: '关联模型',
+        dataIndex: 'model_name',
+        key: 'model_name',
+        width: 150,
+        ellipsis: true,
+        render: (text: string) => text || '-',
       },
       {
         title: '关联订单号',
@@ -113,13 +112,6 @@ const TokenTable: React.FC<ITokenTableProps> = ({
         render: (limit: number) => (limit === 0 ? <Tag color="default">无限制</Tag> : limit),
       },
       {
-        title: '已用次数',
-        dataIndex: 'used_count',
-        key: 'used_count',
-        width: 100,
-        render: (count: number) => count ?? 0,
-      },
-      {
         title: '过期时间',
         dataIndex: 'expire_at',
         key: 'expire_at',
@@ -143,18 +135,10 @@ const TokenTable: React.FC<ITokenTableProps> = ({
       {
         title: '操作',
         key: 'action',
-        width: 220,
+        width: 150,
         fixed: 'right',
         render: (_: unknown, record: IToken) => (
           <Space size="small">
-            <Button
-              type="link"
-              size="small"
-              icon={<HistoryOutlined />}
-              onClick={() => onViewUsage(record)}
-            >
-              记录
-            </Button>
             <Button
               type="link"
               size="small"
@@ -177,7 +161,7 @@ const TokenTable: React.FC<ITokenTableProps> = ({
         ),
       },
     ],
-    [onEdit, onDelete, onViewUsage],
+    [onEdit, onDelete],
   );
 
   return (
@@ -195,7 +179,7 @@ const TokenTable: React.FC<ITokenTableProps> = ({
         onChange: onPageChange,
         onShowSizeChange: onPageChange,
       }}
-      scroll={{ x: 1600 }}
+      scroll={{ x: 1500 }}
     />
   );
 };

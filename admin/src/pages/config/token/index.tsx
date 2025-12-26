@@ -2,13 +2,13 @@
  * Token 管理页面
  * 功能：Token 的增删改查
  */
-import { Button, Card, Input } from 'antd';
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { Button, Card, Input, Space } from 'antd';
+import { PlusOutlined, SearchOutlined, UndoOutlined } from '@ant-design/icons';
 import React, { useEffect, useState } from 'react';
 import { useToken } from './hooks/useToken';
 import TokenTable from './components/TokenTable';
 import TokenForm from './components/TokenForm';
-import UsageLogsModal from './components/UsageLogsModal';
+import RecycleModal from './components/RecycleModal';
 import type { IToken, ITokenFormData } from '@/types';
 import './index.less';
 
@@ -30,8 +30,7 @@ const TokenPage: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingRecord, setEditingRecord] = useState<IToken | null>(null);
   const [keyword, setKeyword] = useState('');
-  const [usageLogsVisible, setUsageLogsVisible] = useState(false);
-  const [selectedToken, setSelectedToken] = useState('');
+  const [recycleVisible, setRecycleVisible] = useState(false);
 
   /**
    * 初始化加载数据
@@ -92,11 +91,10 @@ const TokenPage: React.FC = () => {
   };
 
   /**
-   * 打开使用记录弹窗
+   * 刷新主列表
    */
-  const handleViewUsage = (record: IToken) => {
-    setSelectedToken(record.token);
-    setUsageLogsVisible(true);
+  const handleRefresh = () => {
+    loadData(pagination.current, pagination.pageSize, keyword);
   };
 
   return (
@@ -120,9 +118,14 @@ const TokenPage: React.FC = () => {
               搜索
             </Button>
           </div>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal}>
-            新建 Token
-          </Button>
+          <Space>
+            <Button icon={<UndoOutlined />} onClick={() => setRecycleVisible(true)}>
+              回收站
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal}>
+              新建 Token
+            </Button>
+          </Space>
         </div>
 
         <TokenTable
@@ -136,7 +139,6 @@ const TokenPage: React.FC = () => {
           onPageChange={handleTablePageChange}
           onEdit={handleOpenEditModal}
           onDelete={handleDelete}
-          onViewUsage={handleViewUsage}
         />
 
         <TokenForm
@@ -146,10 +148,10 @@ const TokenPage: React.FC = () => {
           onCancel={handleCloseModal}
         />
 
-        <UsageLogsModal
-          visible={usageLogsVisible}
-          token={selectedToken}
-          onCancel={() => setUsageLogsVisible(false)}
+        <RecycleModal
+          visible={recycleVisible}
+          onCancel={() => setRecycleVisible(false)}
+          onRefresh={handleRefresh}
         />
       </Card>
     </div>

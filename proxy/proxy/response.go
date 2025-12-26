@@ -1,16 +1,15 @@
 package proxy
 
 import (
-	"bytes"
 	"net/http"
 )
 
-// ResponseWrapper 包装 ResponseWriter 以捕获状态码、响应头和响应体
+// ResponseWrapper 包装 ResponseWriter 以捕获状态码、响应头和响应大小
 type ResponseWrapper struct {
 	http.ResponseWriter
-	StatusCode   int
-	Headers      http.Header
-	ResponseBody *bytes.Buffer
+	StatusCode    int
+	Headers       http.Header
+	ResponseSize  int
 }
 
 func (w *ResponseWrapper) WriteHeader(statusCode int) {
@@ -26,12 +25,9 @@ func (w *ResponseWrapper) WriteHeader(statusCode int) {
 }
 
 func (w *ResponseWrapper) Write(b []byte) (int, error) {
-	// 累积响应体
-	if w.ResponseBody == nil {
-		w.ResponseBody = &bytes.Buffer{}
-	}
-	w.ResponseBody.Write(b)
-	return w.ResponseWriter.Write(b)
+	n, err := w.ResponseWriter.Write(b)
+	w.ResponseSize += n
+	return n, err
 }
 
 // Hijack 支持 WebSocket

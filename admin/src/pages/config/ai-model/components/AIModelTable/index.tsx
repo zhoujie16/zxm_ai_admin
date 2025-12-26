@@ -64,12 +64,6 @@ const AIModelTable: React.FC<IAIModelTableProps> = ({
         width: 80,
       },
       {
-        title: '模型Key',
-        dataIndex: 'model_key',
-        key: 'model_key',
-        width: 150,
-      },
-      {
         title: '模型名称',
         dataIndex: 'model_name',
         key: 'model_name',
@@ -80,6 +74,13 @@ const AIModelTable: React.FC<IAIModelTableProps> = ({
         dataIndex: 'api_url',
         key: 'api_url',
         width: 300,
+        ellipsis: true,
+      },
+      {
+        title: 'API Key',
+        dataIndex: 'api_key',
+        key: 'api_key',
+        width: 200,
         ellipsis: true,
       },
       {

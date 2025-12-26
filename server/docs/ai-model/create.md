@@ -17,9 +17,9 @@ Content-Type: application/json
 
 | 参数名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
-| model_key | string | 是 | 模型Key，最大长度100 |
 | model_name | string | 是 | 模型名称，最大长度100 |
 | api_url | string | 是 | API地址，最大长度500 |
+| api_key | string | 是 | API Key，最大长度255 |
 | status | int | 否 | 状态：1=启用，0=禁用，默认为1 |
 | remark | string | 否 | 备注，最大长度500 |
 
@@ -27,9 +27,9 @@ Content-Type: application/json
 
 ```json
 {
-  "model_key": "gpt-4",
   "model_name": "GPT-4",
   "api_url": "https://api.openai.com/v1",
+  "api_key": "sk-xxxxxxx",
   "status": 1,
   "remark": "OpenAI GPT-4 模型"
 }
@@ -45,9 +45,9 @@ Content-Type: application/json
   "message": "success",
   "data": {
     "id": 1,
-    "model_key": "gpt-4",
     "model_name": "GPT-4",
     "api_url": "https://api.openai.com/v1",
+    "api_key": "sk-xxxxxxx",
     "status": 1,
     "remark": "OpenAI GPT-4 模型",
     "created_at": "2024-12-26T00:00:00Z",
@@ -63,7 +63,7 @@ Content-Type: application/json
 ```json
 {
   "code": 400,
-  "message": "参数错误: model_key is required"
+  "message": "参数错误: model_name is required"
 }
 ```
 

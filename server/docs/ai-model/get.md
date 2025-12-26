@@ -34,9 +34,9 @@ GET /api/ai-models/1
   "message": "success",
   "data": {
     "id": 1,
-    "model_key": "gpt-4",
     "model_name": "GPT-4",
     "api_url": "https://api.openai.com/v1",
+    "api_key": "sk-xxxxxxx",
     "status": 1,
     "remark": "OpenAI GPT-4 模型",
     "created_at": "2024-12-26T00:00:00Z",

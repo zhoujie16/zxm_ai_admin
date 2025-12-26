@@ -17,18 +17,18 @@ func NewAIModelService() *AIModelService {
 
 // CreateAIModelRequest 创建 AI 模型请求
 type CreateAIModelRequest struct {
-	ModelKey  string `json:"model_key" binding:"required"` // 模型Key
 	ModelName string `json:"model_name" binding:"required"` // 模型名称
-	ApiURL    string `json:"api_url" binding:"required"`   // API地址
-	Remark    string `json:"remark"`                       // 备注
-	Status    int    `json:"status"`                       // 状态：1=启用，0=禁用
+	ApiURL    string `json:"api_url" binding:"required"`    // API地址
+	ApiKey    string `json:"api_key" binding:"required"`    // API Key
+	Remark    string `json:"remark"`                        // 备注
+	Status    int    `json:"status"`                        // 状态：1=启用，0=禁用
 }
 
 // UpdateAIModelRequest 更新 AI 模型请求
 type UpdateAIModelRequest struct {
-	ModelKey  *string `json:"model_key"`  // 模型Key
 	ModelName *string `json:"model_name"` // 模型名称
 	ApiURL    *string `json:"api_url"`    // API地址
+	ApiKey    *string `json:"api_key"`    // API Key
 	Remark    *string `json:"remark"`     // 备注
 	Status    *int    `json:"status"`     // 状态：1=启用，0=禁用
 }
@@ -55,9 +55,9 @@ func (s *AIModelService) CreateAIModel(req *CreateAIModelRequest) (*models.AIMod
 
 	// 创建 AI 模型
 	aiModel := &models.AIModel{
-		ModelKey:  req.ModelKey,
 		ModelName: req.ModelName,
 		ApiURL:    req.ApiURL,
+		ApiKey:    req.ApiKey,
 		Remark:    req.Remark,
 		Status:    status,
 	}
@@ -125,11 +125,6 @@ func (s *AIModelService) UpdateAIModel(id uint, req *UpdateAIModelRequest) (*mod
 		return nil, errors.New("AI 模型不存在")
 	}
 
-	// 更新模型Key
-	if req.ModelKey != nil {
-		aiModel.ModelKey = *req.ModelKey
-	}
-
 	// 更新模型名称
 	if req.ModelName != nil {
 		aiModel.ModelName = *req.ModelName
@@ -138,6 +133,11 @@ func (s *AIModelService) UpdateAIModel(id uint, req *UpdateAIModelRequest) (*mod
 	// 更新API地址
 	if req.ApiURL != nil {
 		aiModel.ApiURL = *req.ApiURL
+	}
+
+	// 更新API Key
+	if req.ApiKey != nil {
+		aiModel.ApiKey = *req.ApiKey
 	}
 
 	// 更新状态

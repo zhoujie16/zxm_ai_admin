@@ -58,7 +58,6 @@ func autoMigrate() error {
 		&models.ProxyService{},
 		&models.AIModel{},
 		&models.Token{},
-		&models.TokenUsageLog{},
 	); err != nil {
 		return fmt.Errorf("数据库迁移失败: %w", err)
 	}

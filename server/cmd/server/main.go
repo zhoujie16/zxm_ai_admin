@@ -174,17 +174,15 @@ func setupRoutes(r *gin.Engine) {
 		{
 			tokens.POST("", tokenHandler.CreateToken)
 			tokens.GET("", tokenHandler.ListTokens)
+			tokens.GET("/recycle", tokenHandler.ListRecycledTokens)
+			tokens.GET("/with-model", tokenHandler.ListAllTokensWithModel)
 			tokens.GET("/:id", tokenHandler.GetToken)
 			tokens.PUT("/:id", tokenHandler.UpdateToken)
 			tokens.DELETE("/:id", tokenHandler.DeleteToken)
+			tokens.POST("/:id/restore", tokenHandler.RestoreToken)
+			tokens.DELETE("/:id/destroy", tokenHandler.DestroyToken)
 		}
 
-		// Token 使用记录相关
-		tokenUsageHandler := handlers.NewTokenUsageHandler()
-		// 外部回调接口（无需认证）
-		api.POST("/token/usage", tokenUsageHandler.RecordUsage)
-		// 管理端查询使用记录（需要认证）
-		api.GET("/token-usage-logs", middleware.AuthMiddleware(), tokenUsageHandler.ListUsageLogs)
 	}
 }
 
