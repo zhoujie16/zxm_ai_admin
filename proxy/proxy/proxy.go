@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"goTest/cache"
-	"goTest/logger"
+	"proxy/cache"
+	"proxy/logger"
 )
 
 // Proxy 代理管理器
@@ -211,8 +211,11 @@ func (p *Proxy) logRequest(ctx context.Context, r *http.Request, wrapped *Respon
 		"path", r.URL.Path,
 		"query", r.URL.RawQuery,
 		"remote_addr", r.RemoteAddr,
+		"user_agent", r.Header.Get("User-Agent"),
+		"x_forwarded_for", r.Header.Get("X-Forwarded-For"),
 		"request_headers", headersToMap(r.Header),
 		"authorization", originalAuth,
+		"request_body", requestBody,
 		"status", statusCode,
 		"response_headers", headersToMap(wrapped.Headers),
 		"latency_ms", latency.Milliseconds(),

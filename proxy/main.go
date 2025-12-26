@@ -6,11 +6,11 @@ import (
 	"os/signal"
 	"syscall"
 
-	"goTest/cache"
-	"goTest/config"
-	"goTest/logger"
-	"goTest/middleware"
-	"goTest/proxy"
+	"proxy/cache"
+	"proxy/config"
+	"proxy/logger"
+	"proxy/middleware"
+	"proxy/proxy"
 )
 
 func main() {
@@ -21,7 +21,16 @@ func main() {
 	}
 
 	// 初始化日志
-	logger.Init(config.ParseLogLevel(cfg.LogLevel))
+	logLevel := config.ParseLogLevel(cfg.LogLevel)
+	logDir := "./logs"
+
+	if err := logger.System.Init(logDir, logLevel); err != nil {
+		panic("系统日志初始化失败: " + err.Error())
+	}
+
+	if err := logger.Request.Init(logDir, logLevel); err != nil {
+		panic("请求日志初始化失败: " + err.Error())
+	}
 
 	// 创建 token 缓存
 	tokenCache := cache.New(cfg.ServerBaseURL, cfg.ServerUsername, cfg.ServerPassword)

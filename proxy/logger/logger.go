@@ -3,29 +3,15 @@ package logger
 import (
 	"context"
 	"log/slog"
-	"math/rand"
-	"os"
+
+	"github.com/google/uuid"
 )
 
 type contextKey struct{}
 
-// Init 初始化日志
-func Init(level slog.Level) *slog.Logger {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: level,
-	}))
-	slog.SetDefault(logger)
-	return logger
-}
-
-// GenerateRequestID 生成请求 ID
+// GenerateRequestID 生成请求 ID（UUID 格式）
 func GenerateRequestID() string {
-	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
-	b := make([]byte, 8)
-	for i := range b {
-		b[i] = charset[rand.Intn(len(charset))]
-	}
-	return string(b)
+	return uuid.New().String()
 }
 
 // ContextWithRequestID 将 requestID 存入 context
@@ -41,22 +27,22 @@ func RequestIDFromContext(ctx context.Context) string {
 	return ""
 }
 
-// LogRequest 记录请求日志
+// LogRequest 记录请求日志（便捷函数，委托给 Request.LogRequest）
 func LogRequest(ctx context.Context, level slog.Level, msg string, args ...any) {
-	slog.Default().Log(ctx, level, msg, args...)
+	Request.Log(ctx, level, msg, args...)
 }
 
-// Info 记录 info 日志
+// Info 记录 info 日志（便捷函数，委托给 System.Info）
 func Info(msg string, args ...any) {
-	slog.Default().Info(msg, args...)
+	System.Info(msg, args...)
 }
 
-// Error 记录 error 日志
+// Error 记录 error 日志（便捷函数，委托给 System.Error）
 func Error(msg string, args ...any) {
-	slog.Default().Error(msg, args...)
+	System.Error(msg, args...)
 }
 
-// Warn 记录 warn 日志
+// Warn 记录 warn 日志（便捷函数，委托给 System.Warn）
 func Warn(msg string, args ...any) {
-	slog.Default().Warn(msg, args...)
+	System.Warn(msg, args...)
 }

@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"goTest/logger"
+	"proxy/logger"
 )
 
 // TokenModel token 与模型 的绑定关系
