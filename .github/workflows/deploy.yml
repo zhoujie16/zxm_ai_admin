@@ -62,6 +62,7 @@ jobs:
           cd server
           mkdir -p ../server-package/bin
           cp bin/server ../server-package/bin/
+          cp ecosystem.config.js ../server-package/
           cd ..
           tar -czf server.tar.gz -C server-package .
 
@@ -85,8 +86,18 @@ jobs:
           username: ${{ secrets.REMOTE_USER }}
           password: ${{ secrets.REMOTE_PASSWORD }}
           port: 22
-          source: "admin.tar.gz,server.tar.gz,proxy.tar.gz"
+          source: "admin.tar.gz,server.tar.gz"
           target: "/www/wwwroot/w.abczzz.cn/tmp"
+
+      - name: Upload proxy to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          password: ${{ secrets.REMOTE_PASSWORD }}
+          port: 22
+          source: "proxy.tar.gz"
+          target: "/home/server/zxm_ai_admin/proxy-windows"
 
       - name: Deploy on server
         uses: appleboy/ssh-action@v1.0.3
@@ -113,19 +124,26 @@ jobs:
             mkdir -p /home/server/zxm_ai_admin/data
             mkdir -p /home/server/zxm_ai_admin/logs
             
-            # 解压新版本（只包含 bin 目录，不会覆盖 configs）
+            # 解压新版本（只包含 bin 目录和 ecosystem.config.js，不会覆盖 configs）
             tar -xzf server.tar.gz -C /home/server/zxm_ai_admin
             
             chmod +x /home/server/zxm_ai_admin/bin/server
             rm -f server.tar.gz
             
+            # 使用 pm2 启动/重启服务
+            cd /home/server/zxm_ai_admin
+            if pm2 list | grep -q "zxm-ai-admin"; then
+              pm2 restart ecosystem.config.js
+              echo "✅ server 服务已重启"
+            else
+              pm2 start ecosystem.config.js
+              echo "✅ server 服务已启动"
+            fi
+            
             echo "✅ server 后端部署完成"
             
-            # 部署 proxy Windows 版本
+            # 确保 proxy-windows 目录存在
             mkdir -p /home/server/zxm_ai_admin/proxy-windows
-            tar -xzf proxy.tar.gz -C /home/server/zxm_ai_admin/proxy-windows
-            rm -f proxy.tar.gz
-            
-            echo "✅ proxy Windows 64 位版本部署完成"
+            echo "✅ proxy Windows 64 位版本已上传到 /home/server/zxm_ai_admin/proxy-windows"
 
 
