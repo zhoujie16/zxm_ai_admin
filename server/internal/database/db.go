@@ -10,7 +10,7 @@ import (
 	"zxm_ai_admin/server/internal/config"
 	"zxm_ai_admin/server/internal/models"
 
-	"gorm.io/driver/sqlite"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
