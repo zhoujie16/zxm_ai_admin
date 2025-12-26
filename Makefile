@@ -14,7 +14,8 @@ help:
 	@echo "  make dev-server - 仅启动后端服务"
 	@echo "  make dev-proxy  - 仅启动代理服务"
 	@echo "  make build-admin - 仅构建前端"
-	@echo "  make build-server - 仅构建后端"
+	@echo "  make build-server - 仅构建后端（本地）"
+	@echo "  make build-server-linux - 构建后端（Linux 静态链接）"
 	@echo "  make build-proxy  - 仅构建代理服务"
 
 # 安装所有依赖
@@ -67,6 +68,10 @@ build-admin:
 # 构建后端
 build-server:
 	cd server && go build -o bin/server cmd/server/main.go
+
+# 构建后端 Linux 版本（静态链接）
+build-server-linux:
+	cd server && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/server cmd/server/main.go
 
 # 构建代理
 build-proxy:

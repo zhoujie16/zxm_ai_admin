@@ -55,7 +55,7 @@ jobs:
       - name: Build server binary
         run: |
           cd server
-          GOOS=linux GOARCH=amd64 go build -o bin/server cmd/server/main.go
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/server cmd/server/main.go
 
       - name: Package server artifact
         run: |
