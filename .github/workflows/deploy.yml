@@ -1,0 +1,71 @@
+name: Deploy CI/CD
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [22.x]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8.15.0
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: |
+          cd admin
+          pnpm install --frozen-lockfile
+
+      - name: Build admin package
+        run: |
+          cd admin
+          pnpm build
+
+      - name: Package admin artifact
+        run: tar -czf admin.tar.gz -C admin/dist .
+
+      - name: Upload packages to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          password: ${{ secrets.REMOTE_PASSWORD }}
+          port: 22
+          source: "admin.tar.gz"
+          target: "/www/wwwroot/w.abczzz.cn/tmp"
+
+      - name: Deploy on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          password: ${{ secrets.REMOTE_PASSWORD }}
+          port: 22
+          script: |
+            set -e
+            cd /www/wwwroot/w.abczzz.cn/tmp
+            
+            # 部署 admin 前端
+            mkdir -p /www/wwwroot/w.abczzz.cn/zxm-ai-admin
+            rm -rf /www/wwwroot/w.abczzz.cn/zxm-ai-admin/*
+            tar -xzf admin.tar.gz -C /www/wwwroot/w.abczzz.cn/zxm-ai-admin
+            rm -f admin.tar.gz
+            
+            echo "✅ admin 前端部署完成"
+
+
