@@ -3,6 +3,7 @@
  * 功能：管理 AI 模型的列表、创建、更新、删除等数据逻辑
  */
 import { useState, useCallback } from 'react';
+import { message } from 'antd';
 import {
   getAIModelList,
   createAIModel,
@@ -83,6 +84,7 @@ export function useAIModel(): IUseAIModelReturn {
     try {
       const result = await createAIModel(data);
       if (result.success) {
+        message.success('创建成功');
         await loadData(pagination.current, pagination.pageSize);
         return true;
       }
@@ -101,6 +103,7 @@ export function useAIModel(): IUseAIModelReturn {
       try {
         const result = await updateAIModel(id, data);
         if (result.success) {
+          message.success('更新成功');
           await loadData(pagination.current, pagination.pageSize);
           return true;
         }
@@ -121,6 +124,7 @@ export function useAIModel(): IUseAIModelReturn {
       try {
         const result = await deleteAIModel(id);
         if (result.success) {
+          message.success('删除成功');
           // 如果当前页没有数据了，回到上一页
           const newTotal = total - 1;
           const newPage =

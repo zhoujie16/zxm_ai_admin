@@ -1,22 +1,17 @@
 /**
- * HTTP 请求统一封装
- * 功能：提供统一的 API 请求方法，处理后端响应格式
+ * HTTP 请求统一封装（基于 axios）
  */
-import { request as umiRequest } from '@umijs/max';
-import type { RequestOptions } from '@@/plugin-request/request';
+import axios, { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 import type { IBackendResponse } from '@/types';
 import { message } from 'antd';
+import { history } from '@umijs/max';
 
 /**
  * 请求配置选项
  */
-export interface IRequestOptions extends Omit<RequestOptions, 'method'> {
-  /** 是否跳过错误处理（默认 false） */
-  skipErrorHandler?: boolean;
-  /** 是否显示成功消息（默认 false） */
-  showSuccessMessage?: boolean;
-  /** 是否显示错误消息（默认 true） */
-  showErrorMessage?: boolean;
+export interface IRequestOptions {
+  /** 请求头 */
+  headers?: Record<string, string>;
 }
 
 /**
@@ -29,128 +24,138 @@ export interface IRequestResult<T = any> {
   data?: T;
   /** 响应消息 */
   message: string;
-  /** 原始响应 */
-  rawResponse?: IBackendResponse<T>;
 }
 
-/**
- * 处理后端响应格式
- * @param response 后端响应
- * @returns 统一格式的响应结果
- */
-function handleResponse<T = any>(response: IBackendResponse<T>): IRequestResult<T> {
-  const { code, message: msg, data } = response;
+// 创建 axios 实例
+const axiosInstance = axios.create({
+  baseURL: '/zxm-ai-admin',
+  timeout: 30000,
+});
 
-  return {
-    success: code === 0,
-    data,
-    message: msg || (code === 0 ? '操作成功' : '操作失败'),
-    rawResponse: response,
-  };
-}
-
-/**
- * 处理请求错误
- * @param error 错误对象
- * @param showErrorMessage 是否显示错误消息
- * @returns 错误结果
- */
-function handleError(error: any, showErrorMessage: boolean = true): IRequestResult {
-  let errorMessage = '请求失败，请稍后重试';
-
-  if (error.response) {
-    // HTTP 错误响应
-    const { status, data } = error.response;
-    
-    // 后端可能返回 { code, message } 格式的错误响应
-    if (data && typeof data === 'object') {
-      errorMessage = data.message || data.data?.message || errorMessage;
+// 请求拦截器
+axiosInstance.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    const token = localStorage.getItem('token');
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  },
+);
 
-    if (showErrorMessage) {
-      if (status === 401) {
-        message.error(errorMessage || '登录已过期，请重新登录');
-      } else if (status === 400) {
-        message.error(errorMessage || '参数错误，请检查输入');
-      } else if (status === 403) {
-        message.error(errorMessage || '没有权限访问该资源');
-      } else if (status === 404) {
-        message.error(errorMessage || '请求的资源不存在');
-      } else if (status >= 500) {
-        message.error(errorMessage || '服务器错误，请稍后重试');
-      } else {
-        message.error(errorMessage);
+// 响应拦截器 - 处理错误
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError) => {
+    const { response } = error;
+
+    if (response) {
+      const { status } = response;
+
+      // 尝试获取后端返回的错误信息
+      let errorMessage = '请求失败，请稍后重试';
+      const data = response.data as any;
+      if (data?.message) {
+        errorMessage = data.message;
       }
-    }
-  } else if (error.name === 'BizError') {
-    // 业务错误
-    errorMessage = error.info?.errorMessage || errorMessage;
-    if (showErrorMessage) {
+
+      switch (status) {
+        case 401:
+          errorMessage = '登录已过期，请重新登录';
+          localStorage.removeItem('token');
+          setTimeout(() => {
+            if (window.location.pathname !== '/login') {
+              history.push('/login');
+            }
+          }, 1000);
+          break;
+        case 403:
+          errorMessage = '没有权限访问该资源';
+          break;
+        case 404:
+          errorMessage = '请求的资源不存在';
+          break;
+        case 500:
+        case 502:
+        case 503:
+        case 504:
+          errorMessage = '服务器错误，请稍后重试';
+          break;
+        default:
+          if (data?.message) {
+            errorMessage = data.message;
+          }
+      }
+
       message.error(errorMessage);
-    }
-  } else {
-    // 网络错误
-    if (showErrorMessage) {
+    } else {
+      // 网络错误
       message.error('网络错误，请检查网络连接');
     }
+
+    return Promise.reject(error);
+  },
+);
+
+/**
+ * 处理响应数据
+ */
+function handleResponse<T>(response: AxiosResponse<IBackendResponse>): IRequestResult<T> {
+  const { code, data, message: msg } = response.data;
+
+  // 业务成功
+  if (code === 0) {
+    return {
+      success: true,
+      data,
+      message: msg || '操作成功',
+    };
   }
 
+  // 业务失败，显示错误提示
+  message.error(msg || '操作失败');
   return {
     success: false,
-    message: errorMessage,
+    data,
+    message: msg || '操作失败',
   };
 }
 
 /**
  * 通用请求方法
- * @param url 请求地址
- * @param options 请求配置
- * @returns 响应结果
  */
 async function request<T = any>(
   url: string,
-  options: IRequestOptions & { method?: string } = {},
+  options: IRequestOptions & { method?: string; data?: any; params?: any } = {},
 ): Promise<IRequestResult<T>> {
-  const {
-    skipErrorHandler = false,
-    showSuccessMessage = false,
-    showErrorMessage = true,
-    ...restOptions
-  } = options;
+  const { method = 'GET', data, params, headers } = options;
 
   try {
-    // 调用 UmiJS 的 request
-    const response = await umiRequest<IBackendResponse<T>>(url, {
-      ...restOptions,
-      skipErrorHandler: true, // 统一在这里处理错误
-    });
-
-    // 处理后端响应格式
-    const result = handleResponse<T>(response);
-
-    // 显示成功消息
-    if (result.success && showSuccessMessage) {
-      message.success(result.message);
+    const config: any = {
+      url,
+      method,
+      data,
+      params,
+    };
+    if (headers) {
+      config.headers = headers;
     }
-
-    // 如果业务失败，显示错误消息
-    if (!result.success && showErrorMessage) {
-      message.error(result.message);
-    }
-
-    return result;
-  } catch (error: any) {
-    // 处理错误
-    return handleError(error, showErrorMessage);
+    const response = await axiosInstance.request<IBackendResponse>(config);
+    return handleResponse<T>(response as any);
+  } catch (error) {
+    // 错误已在响应拦截器中处理并弹出提示
+    return {
+      success: false,
+      message: '请求失败',
+    };
   }
 }
 
 /**
  * GET 请求
- * @param url 请求地址
- * @param params 请求参数
- * @param options 请求配置
- * @returns 响应结果
  */
 export async function get<T = any>(
   url: string,
@@ -166,10 +171,6 @@ export async function get<T = any>(
 
 /**
  * POST 请求
- * @param url 请求地址
- * @param data 请求体数据
- * @param options 请求配置
- * @returns 响应结果
  */
 export async function post<T = any>(
   url: string,
@@ -185,10 +186,6 @@ export async function post<T = any>(
 
 /**
  * PUT 请求
- * @param url 请求地址
- * @param data 请求体数据
- * @param options 请求配置
- * @returns 响应结果
  */
 export async function put<T = any>(
   url: string,
@@ -204,10 +201,6 @@ export async function put<T = any>(
 
 /**
  * DELETE 请求
- * @param url 请求地址
- * @param data 请求体数据
- * @param options 请求配置
- * @returns 响应结果
  */
 export async function del<T = any>(
   url: string,
@@ -223,10 +216,6 @@ export async function del<T = any>(
 
 /**
  * PATCH 请求
- * @param url 请求地址
- * @param data 请求体数据
- * @param options 请求配置
- * @returns 响应结果
  */
 export async function patch<T = any>(
   url: string,
@@ -240,6 +229,4 @@ export async function patch<T = any>(
   });
 }
 
-// 导出默认请求方法
 export default request;
-

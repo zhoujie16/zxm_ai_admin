@@ -38,9 +38,7 @@ export async function getProxyService(id: number) {
  * @returns 创建结果
  */
 export async function createProxyService(data: IProxyServiceFormData) {
-  return post<IProxyService>('/api/proxy-services', data, {
-    showSuccessMessage: true,
-  });
+  return post<IProxyService>('/api/proxy-services', data);
 }
 
 /**
@@ -50,9 +48,7 @@ export async function createProxyService(data: IProxyServiceFormData) {
  * @returns 更新结果
  */
 export async function updateProxyService(id: number, data: IProxyServiceFormData) {
-  return put<IProxyService>(`/api/proxy-services/${id}`, data, {
-    showSuccessMessage: true,
-  });
+  return put<IProxyService>(`/api/proxy-services/${id}`, data);
 }
 
 /**
@@ -61,8 +57,6 @@ export async function updateProxyService(id: number, data: IProxyServiceFormData
  * @returns 删除结果
  */
 export async function deleteProxyService(id: number) {
-  return del(`/api/proxy-services/${id}`, undefined, {
-    showSuccessMessage: true,
-  });
+  return del(`/api/proxy-services/${id}`);
 }
 

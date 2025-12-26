@@ -1,67 +1,51 @@
 package config
 
 import (
+	"fmt"
 	"log/slog"
-	"os"
 	"strings"
+
+	"github.com/spf13/viper"
 )
 
 // Config 代理配置
 type Config struct {
-	LogLevel   string // 日志级别
-	ListenAddr string // 监听地址
-
-	// Token 动态路由配置
-	ServerAPIURL   string // 后端 API 地址
-	ServerAPIToken string // 后端 API 认证 Token
-	SyncInterval   int    // 缓存同步间隔（分钟）
+	LogLevel        string `mapstructure:"log_level"`
+	ListenAddr      string `mapstructure:"listen_addr"`
+	ServerBaseURL   string `mapstructure:"server_base_url"`
+	ServerUsername  string `mapstructure:"server_username"`
+	ServerPassword  string `mapstructure:"server_password"`
+	SyncInterval    int    `mapstructure:"sync_interval"`
 }
 
-// Load 从环境变量加载配置
-func Load() *Config {
-	return &Config{
-		LogLevel:       getEnv("LOG_LEVEL", "info"),
-		ListenAddr:     getEnv("LISTEN_ADDR", ":6800"),
-		ServerAPIURL:   getEnv("SERVER_API_URL", "http://localhost:6808"),
-		ServerAPIToken: getEnv("SERVER_API_TOKEN", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6ImFkbWluIiwiaXNzIjoienhtLWFpLWFkbWluIiwiZXhwIjoxNzY2NzU5NTQzLCJuYmYiOjE3NjY2NzMxNDMsImlhdCI6MTc2NjY3MzE0M30.mOyW65CHdokcH5OJks5DU3pKHT24-RtLpuK8Nb7nFzs"),
-		SyncInterval:   getEnvInt("SYNC_INTERVAL", 10),
+var appConfig *Config
+
+// Load 加载配置文件
+func Load(configPath string) (*Config, error) {
+	v := viper.New()
+
+	// 设置配置文件路径
+	v.SetConfigFile(configPath)
+	v.SetConfigType("yaml")
+
+	// 读取配置文件
+	if err := v.ReadInConfig(); err != nil {
+		return nil, fmt.Errorf("读取配置文件失败: %w", err)
 	}
-}
 
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
+	// 解析配置到结构体
+	cfg := &Config{}
+	if err := v.Unmarshal(cfg); err != nil {
+		return nil, fmt.Errorf("解析配置文件失败: %w", err)
 	}
-	return defaultValue
+
+	appConfig = cfg
+	return cfg, nil
 }
 
-func getEnvInt(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		if intVal, err := parseInt(value); err == nil {
-			return intVal
-		}
-	}
-	return defaultValue
-}
-
-func parseInt(s string) (int, error) {
-	var result int
-	for _, ch := range s {
-		if ch < '0' || ch > '9' {
-			return 0, &parseError{s}
-		}
-		result = result*10 + int(ch-'0')
-	}
-	return result, nil
-}
-
-// parseError 解析错误
-type parseError struct {
-	input string
-}
-
-func (e *parseError) Error() string {
-	return "invalid integer: " + e.input
+// GetConfig 获取配置实例
+func GetConfig() *Config {
+	return appConfig
 }
 
 // ParseLogLevel 解析日志级别

@@ -40,9 +40,7 @@ export async function getToken(id: number) {
  * @returns 创建结果
  */
 export async function createToken(data: ITokenFormData) {
-  return post<IToken>('/api/tokens', data, {
-    showSuccessMessage: true,
-  });
+  return post<IToken>('/api/tokens', data);
 }
 
 /**
@@ -52,9 +50,7 @@ export async function createToken(data: ITokenFormData) {
  * @returns 更新结果
  */
 export async function updateToken(id: number, data: ITokenFormData) {
-  return put<IToken>(`/api/tokens/${id}`, data, {
-    showSuccessMessage: true,
-  });
+  return put<IToken>(`/api/tokens/${id}`, data);
 }
 
 /**
@@ -63,9 +59,7 @@ export async function updateToken(id: number, data: ITokenFormData) {
  * @returns 删除结果
  */
 export async function deleteToken(id: number) {
-  return del(`/api/tokens/${id}`, undefined, {
-    showSuccessMessage: true,
-  });
+  return del(`/api/tokens/${id}`);
 }
 
 /**
@@ -89,9 +83,7 @@ export async function getRecycledTokenList(page: number = 1, page_size: number =
  * @returns 恢复结果
  */
 export async function restoreToken(id: number) {
-  return post(`/api/tokens/${id}/restore`, undefined, {
-    showSuccessMessage: true,
-  });
+  return post(`/api/tokens/${id}/restore`);
 }
 
 /**
@@ -100,7 +92,5 @@ export async function restoreToken(id: number) {
  * @returns 删除结果
  */
 export async function destroyToken(id: number) {
-  return del(`/api/tokens/${id}/destroy`, undefined, {
-    showSuccessMessage: true,
-  });
+  return del(`/api/tokens/${id}/destroy`);
 }

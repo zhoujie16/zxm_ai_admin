@@ -15,20 +15,23 @@ import (
 
 func main() {
 	// 加载配置
-	cfg := config.Load()
+	cfg, err := config.Load("./configs/config.yaml")
+	if err != nil {
+		panic("配置加载失败: " + err.Error())
+	}
 
 	// 初始化日志
 	logger.Init(config.ParseLogLevel(cfg.LogLevel))
 
 	// 创建 token 缓存
-	tokenCache := cache.New(cfg.ServerAPIURL, cfg.ServerAPIToken)
+	tokenCache := cache.New(cfg.ServerBaseURL, cfg.ServerUsername, cfg.ServerPassword)
 	cacheDone := make(chan struct{})
 
 	// 启动缓存同步（异步）
 	go tokenCache.StartSync(cfg.SyncInterval, cacheDone)
 
 	logger.Info("token 动态路由已启用",
-		"server_api", cfg.ServerAPIURL,
+		"server_base_url", cfg.ServerBaseURL,
 		"sync_interval_minutes", cfg.SyncInterval,
 	)
 

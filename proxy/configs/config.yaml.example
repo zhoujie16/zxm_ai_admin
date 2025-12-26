@@ -1,0 +1,5 @@
+log_level: info
+listen_addr: :6800
+server_api_url: http://localhost:6808
+server_api_token: ""
+sync_interval: 10

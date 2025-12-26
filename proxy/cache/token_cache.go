@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -29,25 +30,101 @@ type APIResponse struct {
 	Data    []TokenModel `json:"data"`
 }
 
+// LoginRequest 登录请求
+type LoginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// LoginResponse 登录响应
+type LoginResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Data    struct {
+		Token     string `json:"token"`
+		Username  string `json:"username"`
+		UserInfo  struct {
+			Username string `json:"username"`
+		} `json:"user_info"`
+	} `json:"data"`
+}
+
 // TokenCache token 缓存
 type TokenCache struct {
-	mu        sync.RWMutex
-	cache     map[string]*TokenModel // key: token (sk-xxx)
-	ready     bool                   // 缓存是否已就绪
-	client    *http.Client
-	serverURL string
-	apiToken  string
+	mu            sync.RWMutex
+	cache         map[string]*TokenModel // key: token (sk-xxx)
+	ready         bool                   // 缓存是否已就绪
+	client        *http.Client
+	serverBaseURL string
+	username      string
+	password      string
+	jwtToken      string // 登录获取的 JWT token
 }
 
 // New 创建 token 缓存
-func New(serverURL, apiToken string) *TokenCache {
+func New(serverBaseURL, username, password string) *TokenCache {
 	return &TokenCache{
-		cache:     make(map[string]*TokenModel),
-		ready:     false,
-		client:    &http.Client{Timeout: 30 * time.Second},
-		serverURL: serverURL,
-		apiToken:  apiToken,
+		cache:         make(map[string]*TokenModel),
+		ready:         false,
+		client:        &http.Client{Timeout: 30 * time.Second},
+		serverBaseURL: serverBaseURL,
+		username:      username,
+		password:      password,
 	}
+}
+
+// Login 登录获取 JWT token
+func (c *TokenCache) Login() error {
+	url := c.serverBaseURL + "/api/auth/login"
+	reqBody := LoginRequest{
+		Username: c.username,
+		Password: c.password,
+	}
+	bodyBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return &APIError{StatusCode: resp.StatusCode, Message: "登录返回状态码: " + http.StatusText(resp.StatusCode)}
+	}
+
+	var loginResp LoginResponse
+	if err := json.NewDecoder(resp.Body).Decode(&loginResp); err != nil {
+		return err
+	}
+
+	if loginResp.Code != 0 {
+		return &APIError{StatusCode: resp.StatusCode, Message: loginResp.Message}
+	}
+
+	c.mu.Lock()
+	c.jwtToken = loginResp.Data.Token
+	c.mu.Unlock()
+
+	logger.Info("登录成功", "username", c.username)
+	return nil
+}
+
+// getJWTToken 获取当前的 JWT token
+func (c *TokenCache) getJWTToken() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.jwtToken
 }
 
 // Ready 缓存是否已就绪
@@ -87,15 +164,18 @@ func extractBearerToken(authHeader string) string {
 
 // Sync 同步缓存
 func (c *TokenCache) Sync() error {
-	url := c.serverURL + "/api/tokens/with-model"
+	url := c.serverBaseURL + "/api/tokens/with-model"
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return err
 	}
 
-	if c.apiToken != "" {
-		req.Header.Set("Authorization", "Bearer "+c.apiToken)
+	jwtToken := c.getJWTToken()
+	if jwtToken == "" {
+		return &APIError{StatusCode: 0, Message: "JWT token 为空，请先登录"}
 	}
+
+	req.Header.Set("Authorization", "Bearer "+jwtToken)
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := c.client.Do(req)
@@ -103,6 +183,16 @@ func (c *TokenCache) Sync() error {
 		return err
 	}
 	defer resp.Body.Close()
+
+	// 401 表示 token 过期，重新登录后重试
+	if resp.StatusCode == http.StatusUnauthorized {
+		logger.Info("JWT token 过期，重新登录")
+		if err := c.Login(); err != nil {
+			return err
+		}
+		// 重试同步
+		return c.Sync()
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		return &APIError{StatusCode: resp.StatusCode, Message: "API 返回状态码: " + http.StatusText(resp.StatusCode)}
@@ -148,7 +238,12 @@ func (c *TokenCache) StartSync(intervalMinutes int, done chan struct{}) {
 	ticker := time.NewTicker(time.Duration(intervalMinutes) * time.Minute)
 	defer ticker.Stop()
 
-	// 启动时立即同步一次
+	// 启动时先登录
+	if err := c.Login(); err != nil {
+		logger.Warn("登录失败", "error", err)
+	}
+
+	// 登录成功后立即同步一次
 	if err := c.Sync(); err != nil {
 		logger.Warn("token 首次同步失败", "error", err)
 	}

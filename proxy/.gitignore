@@ -54,3 +54,6 @@ temp/
 
 # Air live reload tool
 tmp/
+
+# Config files (may contain sensitive data)
+/configs/config.yaml

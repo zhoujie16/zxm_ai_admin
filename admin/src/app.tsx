@@ -1,33 +1,16 @@
 // 文件说明: UmiJS 运行时配置, 处理初始状态、权限与布局
-import type { RequestConfig, RunTimeLayoutConfig } from '@umijs/max';
+import type { RunTimeLayoutConfig } from '@umijs/max';
 import { history } from '@umijs/max';
-import { Avatar, Dropdown, Space, message } from 'antd';
+import { Avatar, Dropdown, Space } from 'antd';
 import { LogoutOutlined, SettingOutlined, UserOutlined } from '@ant-design/icons';
 import { SWRConfig } from 'swr';
-import { errorConfig } from './requestErrorConfig';
 import { isTokenValid, getUserFromToken } from '@/utils/jwt';
 import '@ant-design/v5-patch-for-react-19';
 
-// SWR 全局配置
+// SWR 全局配置（错误处理已在 axios 拦截器中处理）
 const swrConfig = {
   onError: (error: any) => {
     console.error('SWR Error:', error);
-    if (error?.response?.status === 401) {
-      message.error('登录已过期，请重新登录');
-      setTimeout(() => {
-        if (window.location.pathname !== '/login') {
-          history.push('/login');
-        }
-      }, 1000);
-    } else if (error?.response?.status === 403) {
-      message.error('没有权限访问该资源');
-    } else if (error?.response?.status === 404) {
-      message.error('请求的资源不存在');
-    } else if (error?.response?.status >= 500) {
-      message.error('服务器错误，请稍后重试');
-    } else {
-      message.error('请求失败，请检查网络连接');
-    }
   },
 };
 
@@ -189,16 +172,6 @@ export const layout: RunTimeLayoutConfig = ({ initialState }) => {
       );
     },
   };
-};
-
-/**
- * @name request 配置，可以配置错误处理
- * 它基于 axios 和 ahooks 的 useRequest 提供了一套统一的网络请求和错误处理方案。
- * @doc https://umijs.org/docs/max/request#配置
- */
-export const request: RequestConfig = {
-  baseURL: '/zxm-ai-admin',
-  ...errorConfig,
 };
 
 /**

@@ -38,9 +38,7 @@ export async function getAIModel(id: number) {
  * @returns 创建结果
  */
 export async function createAIModel(data: IAIModelFormData) {
-  return post<IAIModel>('/api/ai-models', data, {
-    showSuccessMessage: true,
-  });
+  return post<IAIModel>('/api/ai-models', data);
 }
 
 /**
@@ -50,9 +48,7 @@ export async function createAIModel(data: IAIModelFormData) {
  * @returns 更新结果
  */
 export async function updateAIModel(id: number, data: IAIModelFormData) {
-  return put<IAIModel>(`/api/ai-models/${id}`, data, {
-    showSuccessMessage: true,
-  });
+  return put<IAIModel>(`/api/ai-models/${id}`, data);
 }
 
 /**
@@ -61,7 +57,5 @@ export async function updateAIModel(id: number, data: IAIModelFormData) {
  * @returns 删除结果
  */
 export async function deleteAIModel(id: number) {
-  return del(`/api/ai-models/${id}`, undefined, {
-    showSuccessMessage: true,
-  });
+  return del(`/api/ai-models/${id}`);
 }

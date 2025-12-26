@@ -3,6 +3,7 @@
  * 功能：管理代理服务的列表、创建、更新、删除等数据逻辑
  */
 import { useState, useCallback } from 'react';
+import { message } from 'antd';
 import {
   getProxyServiceList,
   createProxyService,
@@ -83,6 +84,7 @@ export function useProxyService(): IUseProxyServiceReturn {
     try {
       const result = await createProxyService(data);
       if (result.success) {
+        message.success('创建成功');
         await loadData(pagination.current, pagination.pageSize);
         return true;
       }
@@ -101,6 +103,7 @@ export function useProxyService(): IUseProxyServiceReturn {
       try {
         const result = await updateProxyService(id, data);
         if (result.success) {
+          message.success('更新成功');
           await loadData(pagination.current, pagination.pageSize);
           return true;
         }
@@ -121,6 +124,7 @@ export function useProxyService(): IUseProxyServiceReturn {
       try {
         const result = await deleteProxyService(id);
         if (result.success) {
+          message.success('删除成功');
           // 如果当前页没有数据了，回到上一页
           const newTotal = total - 1;
           const newPage =

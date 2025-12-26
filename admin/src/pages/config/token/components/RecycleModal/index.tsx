@@ -2,7 +2,7 @@
  * Token 回收站弹窗组件
  * 功能：展示已删除的 Token 列表，支持恢复和永久删除
  */
-import { Button, Input, Modal, Space, Table, Tag, Typography } from 'antd';
+import { Button, Input, Modal, Space, Table, Tag, Typography, message } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 import { DeleteOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import React, { useEffect, useState } from 'react';
@@ -87,6 +87,7 @@ const RecycleModal: React.FC<IRecycleModalProps> = ({ visible, onCancel, onRefre
     try {
       const res = await restoreToken(id);
       if (res.success) {
+        message.success('恢复成功');
         loadData(pagination.current, pagination.pageSize, keyword);
         onRefresh?.();
       }
@@ -109,7 +110,9 @@ const RecycleModal: React.FC<IRecycleModalProps> = ({ visible, onCancel, onRefre
         try {
           const res = await destroyToken(id);
           if (res.success) {
+            message.success('永久删除成功');
             loadData(pagination.current, pagination.pageSize, keyword);
+            onRefresh?.();
           }
         } catch (error) {
           console.error('删除失败', error);
