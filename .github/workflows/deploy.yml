@@ -49,6 +49,8 @@ jobs:
         run: |
           cd server
           go mod download
+          cd ../proxy
+          go mod download
 
       - name: Build server binary
         run: |
@@ -63,6 +65,19 @@ jobs:
           cd ..
           tar -czf server.tar.gz -C server-package .
 
+      - name: Build proxy binary (Windows 64)
+        run: |
+          cd proxy
+          GOOS=windows GOARCH=amd64 go build -o bin/proxy.exe main.go
+
+      - name: Package proxy artifact
+        run: |
+          cd proxy
+          mkdir -p ../proxy-package/bin
+          cp bin/proxy.exe ../proxy-package/bin/
+          cd ..
+          tar -czf proxy.tar.gz -C proxy-package .
+
       - name: Upload packages to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -70,7 +85,7 @@ jobs:
           username: ${{ secrets.REMOTE_USER }}
           password: ${{ secrets.REMOTE_PASSWORD }}
           port: 22
-          source: "admin.tar.gz,server.tar.gz"
+          source: "admin.tar.gz,server.tar.gz,proxy.tar.gz"
           target: "/www/wwwroot/w.abczzz.cn/tmp"
 
       - name: Deploy on server
@@ -105,5 +120,12 @@ jobs:
             rm -f server.tar.gz
             
             echo "✅ server 后端部署完成"
+            
+            # 部署 proxy Windows 版本
+            mkdir -p /home/server/zxm_ai_admin/proxy-windows
+            tar -xzf proxy.tar.gz -C /home/server/zxm_ai_admin/proxy-windows
+            rm -f proxy.tar.gz
+            
+            echo "✅ proxy Windows 64 位版本部署完成"
 
 
