@@ -55,6 +55,13 @@ export default [
     icon: 'FileTextOutlined',
     component: './system-log',
   },
+  // 删除日志（一级）
+  {
+    path: '/delete-log',
+    name: '删除日志',
+    icon: 'DeleteOutlined',
+    component: './delete-log',
+  },
 
   // 404页面
   {

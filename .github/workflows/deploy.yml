@@ -53,6 +53,8 @@ jobs:
           go mod download
           cd ../log-service
           go mod download
+          cd ../log-syncer
+          go mod download
 
       - name: Build server binary
         run: |
@@ -94,6 +96,19 @@ jobs:
           cd ..
           tar -czf log-service.tar.gz -C log-service-package .
 
+      - name: Build log-syncer binary (Windows 64)
+        run: |
+          cd log-syncer
+          GOOS=windows GOARCH=amd64 go build -o bin/log-syncer.exe cmd/server/main.go
+
+      - name: Package log-syncer artifact
+        run: |
+          cd log-syncer
+          mkdir -p ../log-syncer-package/bin
+          cp bin/log-syncer.exe ../log-syncer-package/bin/
+          cd ..
+          tar -czf log-syncer.tar.gz -C log-syncer-package .
+
       - name: Upload packages to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -123,6 +138,16 @@ jobs:
           port: 22
           source: "log-service.tar.gz"
           target: "/home/server/zxm_ai_admin/log-service-windows"
+
+      - name: Upload log-syncer to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          password: ${{ secrets.REMOTE_PASSWORD }}
+          port: 22
+          source: "log-syncer.tar.gz"
+          target: "/home/server/zxm_ai_admin/log-syncer-windows"
 
       - name: Deploy on server
         uses: appleboy/ssh-action@v1.0.3
@@ -170,7 +195,9 @@ jobs:
             # 确保 Windows 包目录存在
             mkdir -p /home/server/zxm_ai_admin/proxy-windows
             mkdir -p /home/server/zxm_ai_admin/log-service-windows
+            mkdir -p /home/server/zxm_ai_admin/log-syncer-windows
             echo "✅ proxy Windows 包已上传到 /home/server/zxm_ai_admin/proxy-windows"
             echo "✅ log-service Windows 包已上传到 /home/server/zxm_ai_admin/log-service-windows"
+            echo "✅ log-syncer Windows 包已上传到 /home/server/zxm_ai_admin/log-syncer-windows"
 
 

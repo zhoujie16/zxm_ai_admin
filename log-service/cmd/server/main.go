@@ -98,8 +98,9 @@ func setupRoutes(r *gin.Engine) {
 	api := r.Group("/api")
 	{
 		// 写入日志（使用 System Auth Token 认证）
-		api.POST("/logs", middleware.SystemAuthMiddleware(), logHandler.CreateLog)
-		api.POST("/logs/upload", middleware.SystemAuthMiddleware(), logHandler.UploadLog)
+		api.POST("/request-logs", middleware.SystemAuthMiddleware(), logHandler.CreateRequestLog)
+		api.POST("/request-logs/batch", middleware.SystemAuthMiddleware(), logHandler.BatchCreateRequestLogs)
+		api.POST("/system-logs/batch", middleware.SystemAuthMiddleware(), logHandler.BatchCreateSystemLogs)
 
 		// 查询日志（使用 JWT 认证）
 		api.GET("/request-logs", middleware.AuthMiddleware(), logHandler.ListLogs)
@@ -108,5 +109,9 @@ func setupRoutes(r *gin.Engine) {
 		// 系统日志查询（使用 JWT 认证）
 		api.GET("/system-logs", middleware.AuthMiddleware(), logHandler.ListSystemLogs)
 		api.GET("/system-logs/:id", middleware.AuthMiddleware(), logHandler.GetSystemLog)
+
+		// 删除日志（token 在 body 中验证）
+		api.POST("/request-logs/delete", logHandler.DeleteRequestLogs)
+		api.POST("/system-logs/delete", logHandler.DeleteSystemLogs)
 	}
 }

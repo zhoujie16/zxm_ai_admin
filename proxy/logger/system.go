@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // System 系统日志记录器
@@ -22,14 +24,19 @@ type SystemLogger struct {
 var system = &SystemLogger{}
 
 // getCurrentHalfHour 获取当前半小时标识（用于文件名）
-// 返回紧凑时间戳格式，如：202512281630（表示 2025-12-28 16:30 开始的半小时）
+// 返回紧凑时间戳格式，如：202512281630（表示 2025-12-28 16:00-16:30 的半小时）
 func getCurrentHalfHour() string {
 	now := time.Now()
 	minute := now.Minute()
-	// 计算当前半小时的开始时间
+	// 计算当前半小时的结束时间
 	hour := now.Hour()
-	minStart := (minute / 30) * 30
-	return now.Format("20060102") + fmt.Sprintf("%02d%02d", hour, minStart)
+	minEnd := ((minute / 30) + 1) * 30
+	// 如果是 60 分钟，进位到下一小时
+	if minEnd >= 60 {
+		hour += 1
+		minEnd = 0
+	}
+	return now.Format("20060102") + fmt.Sprintf("%02d%02d", hour, minEnd)
 }
 
 // Init 初始化系统日志
@@ -96,7 +103,9 @@ func (s *SystemLogger) Info(msg string, args ...any) {
 	}
 
 	s.rotate()
-	s.logger.Info(msg, args...)
+	requestID := uuid.New().String()
+	newArgs := append([]any{"request_id", requestID}, args...)
+	s.logger.Info(msg, newArgs...)
 }
 
 // Error 记录 error 级别日志
@@ -109,7 +118,9 @@ func (s *SystemLogger) Error(msg string, args ...any) {
 	}
 
 	s.rotate()
-	s.logger.Error(msg, args...)
+	requestID := uuid.New().String()
+	newArgs := append([]any{"request_id", requestID}, args...)
+	s.logger.Error(msg, newArgs...)
 }
 
 // Warn 记录 warn 级别日志
@@ -122,7 +133,9 @@ func (s *SystemLogger) Warn(msg string, args ...any) {
 	}
 
 	s.rotate()
-	s.logger.Warn(msg, args...)
+	requestID := uuid.New().String()
+	newArgs := append([]any{"request_id", requestID}, args...)
+	s.logger.Warn(msg, newArgs...)
 }
 
 // System 导出的系统日志实例

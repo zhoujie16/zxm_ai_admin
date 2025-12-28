@@ -7,8 +7,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"zxm_ai_admin/log-service/internal/config"
 	"zxm_ai_admin/log-service/internal/database"
 	"zxm_ai_admin/log-service/internal/models"
+
+	"gorm.io/gorm/clause"
 )
 
 type LogService struct{}
@@ -172,7 +175,7 @@ func (s *LogService) GetLog(id uint) (*models.TokenUsageLog, error) {
 	return &log, nil
 }
 
-// BatchCreateLogs 批量创建日志记录
+// BatchCreateLogs 批量创建日志记录（忽略重复 request_id）
 func (s *LogService) BatchCreateLogs(reqs []CreateLogRequest) int {
 	if len(reqs) == 0 {
 		return 0
@@ -202,9 +205,60 @@ func (s *LogService) BatchCreateLogs(reqs []CreateLogRequest) int {
 		})
 	}
 
-	if err := database.DB.Create(&logs).Error; err != nil {
+	// 使用 OnConflict 忽略重复的 request_id
+	if err := database.DB.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "request_id"}},
+		DoNothing: true,
+	}).Create(&logs).Error; err != nil {
 		return 0
 	}
 
 	return len(logs)
+}
+
+// DeleteLogsByTimeRangeRequest 按时间范围删除请求日志
+type DeleteLogsByTimeRangeRequest struct {
+	StartTime       string `json:"start_time" binding:"required"`
+	EndTime         string `json:"end_time" binding:"required"`
+	SystemAuthToken string `json:"system_auth_token" binding:"required"`
+}
+
+// DeleteLogsByTimeRangeResponse 按时间范围删除请求日志响应
+type DeleteLogsByTimeRangeResponse struct {
+	DeletedCount int64 `json:"deleted_count"`
+}
+
+// DeleteLogsByTimeRange 按时间范围删除请求日志
+func (s *LogService) DeleteLogsByTimeRange(req *DeleteLogsByTimeRangeRequest) (*DeleteLogsByTimeRangeResponse, error) {
+	cfg := config.GetConfig()
+
+	// 验证 System Auth Token
+	if req.SystemAuthToken != cfg.API.SystemAuthToken {
+		return nil, errors.New("无效的系统认证令牌")
+	}
+
+	// 解析时间范围
+	startTime, err := time.Parse("2006-01-02 15:04:05", req.StartTime)
+	if err != nil {
+		return nil, errors.New("开始时间格式错误，正确格式为: 2006-01-02 15:04:05")
+	}
+
+	endTime, err := time.Parse("2006-01-02 15:04:05", req.EndTime)
+	if err != nil {
+		return nil, errors.New("结束时间格式错误，正确格式为: 2006-01-02 15:04:05")
+	}
+
+	if startTime.After(endTime) {
+		return nil, errors.New("开始时间不能晚于结束时间")
+	}
+
+	// 执行硬删除
+	result := database.DB.Unscoped().Where("time >= ? AND time <= ?", startTime, endTime).Delete(&models.TokenUsageLog{})
+	if result.Error != nil {
+		return nil, errors.New("删除日志记录失败")
+	}
+
+	return &DeleteLogsByTimeRangeResponse{
+		DeletedCount: result.RowsAffected,
+	}, nil
 }

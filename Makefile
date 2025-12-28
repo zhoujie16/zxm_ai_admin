@@ -14,11 +14,13 @@ help:
 	@echo "  make dev-server      - 仅启动后端服务"
 	@echo "  make dev-proxy       - 仅启动代理服务"
 	@echo "  make dev-log-service - 仅启动日志服务"
+	@echo "  make dev-log-syncer  - 仅启动日志同步服务"
 	@echo "  make build-admin     - 仅构建前端"
 	@echo "  make build-server    - 仅构建后端（本地）"
 	@echo "  make build-server-linux - 构建后端（Linux 静态链接）"
 	@echo "  make build-proxy     - 仅构建代理服务"
 	@echo "  make build-log-service - 仅构建日志服务"
+	@echo "  make build-log-syncer - 仅构建日志同步服务"
 
 # 安装所有依赖
 install:
@@ -30,6 +32,8 @@ install:
 	cd proxy && go mod download
 	@echo "安装日志服务依赖..."
 	cd log-service && go mod download
+	@echo "安装日志同步服务依赖..."
+	cd log-syncer && go mod download
 	@echo "✅ 所有依赖安装完成"
 
 # 开发模式 - 启动所有服务
@@ -39,6 +43,7 @@ dev:
 	@echo "  make dev-server      # 后端 (端口 6808)"
 	@echo "  make dev-proxy       # 代理 (端口 6800)"
 	@echo "  make dev-log-service # 日志服务 (端口 6809)"
+	@echo "  make dev-log-syncer  # 日志同步服务"
 
 # 仅启动前端
 dev-admin:
@@ -60,6 +65,11 @@ dev-log-service:
 	@echo "启动日志服务..."
 	cd log-service && go run cmd/server/main.go
 
+# 仅启动日志同步服务
+dev-log-syncer:
+	@echo "启动日志同步服务..."
+	cd log-syncer && go run cmd/server/main.go
+
 # 构建所有项目
 build:
 	@echo "构建前端..."
@@ -70,6 +80,8 @@ build:
 	cd proxy && go build -o bin/proxy main.go
 	@echo "构建日志服务..."
 	cd log-service && go build -o bin/log-service cmd/server/main.go
+	@echo "构建日志同步服务..."
+	cd log-syncer && go build -o bin/log-syncer cmd/server/main.go
 	@echo "✅ 所有项目构建完成"
 
 # 构建前端
@@ -92,6 +104,10 @@ build-proxy:
 build-log-service:
 	cd log-service && go build -o bin/log-service cmd/server/main.go
 
+# 构建日志同步服务
+build-log-syncer:
+	cd log-syncer && go build -o bin/log-syncer cmd/server/main.go
+
 # 清理构建产物
 clean:
 	@echo "清理前端构建产物..."
@@ -102,6 +118,8 @@ clean:
 	rm -rf proxy/bin
 	@echo "清理日志服务构建产物..."
 	rm -rf log-service/bin
+	@echo "清理日志同步服务构建产物..."
+	rm -rf log-syncer/bin
 	@echo "✅ 清理完成"
 
 # 运行测试

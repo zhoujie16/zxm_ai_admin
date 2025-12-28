@@ -11,6 +11,7 @@ import (
 // SystemLog 系统日志模型
 type SystemLog struct {
 	ID        uint           `json:"id" gorm:"primaryKey"`
+	RequestID string         `json:"request_id" gorm:"size:64;uniqueIndex"`
 	Time      time.Time      `json:"time" gorm:"not null;index"`
 	Level     string         `json:"level" gorm:"size:20;index"`
 	Msg       string         `json:"msg" gorm:"size:500"`

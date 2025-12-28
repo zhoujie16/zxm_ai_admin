@@ -3,11 +3,8 @@
 package handlers
 
 import (
-	"bufio"
-	"encoding/json"
 	"net/http"
 	"strconv"
-	"time"
 	"zxm_ai_admin/log-service/internal/services"
 
 	"github.com/gin-gonic/gin"
@@ -67,16 +64,16 @@ func InternalServerError(c *gin.Context, message string) {
 	})
 }
 
-// CreateLog 创建日志记录（proxy 调用）
-// @Summary 创建日志记录
+// CreateRequestLog 创建请求日志记录（proxy 调用）
+// @Summary 创建请求日志记录
 // @Description 记录一次 Token 请求的使用情况
-// @Tags 日志
+// @Tags 请求日志
 // @Accept json
 // @Produce json
 // @Param request body services.CreateLogRequest true "日志信息"
 // @Success 200 {object} models.TokenUsageLog
-// @Router /api/logs [post]
-func (h *LogHandler) CreateLog(c *gin.Context) {
+// @Router /api/request-logs [post]
+func (h *LogHandler) CreateRequestLog(c *gin.Context) {
 	var req services.CreateLogRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		BadRequest(c, "参数错误: "+err.Error())
@@ -150,295 +147,54 @@ func (h *LogHandler) GetLog(c *gin.Context) {
 	Success(c, log)
 }
 
-// UploadLog 上传日志文件（proxy 调用）
-// @Summary 上传日志文件
-// @Description 接收 proxy 上传的日志文件，解析后保存到数据库
-// @Tags 日志
-// @Accept multipart/form-data
+// BatchCreateRequestLogs 批量创建请求日志记录（proxy 调用）
+// @Summary 批量创建请求日志记录
+// @Description 接收多条请求日志记录的数组，批量保存到数据库
+// @Tags 请求日志
+// @Accept json
 // @Produce json
-// @Param file formData file true "日志文件"
-// @Param type formData string true "日志类型" Enums(request, system)
+// @Param request body []services.CreateLogRequest true "日志记录数组"
 // @Success 200 {object} map[string]interface{}
-// @Router /api/logs/upload [post]
-func (h *LogHandler) UploadLog(c *gin.Context) {
-	// 获取上传的文件
-	fileHeader, err := c.FormFile("file")
-	if err != nil {
-		BadRequest(c, "获取文件失败: "+err.Error())
+// @Router /api/request-logs/batch [post]
+func (h *LogHandler) BatchCreateRequestLogs(c *gin.Context) {
+	var reqs []services.CreateLogRequest
+	if err := c.ShouldBindJSON(&reqs); err != nil {
+		BadRequest(c, "参数错误: "+err.Error())
 		return
 	}
 
-	// 获取日志类型
-	logType := c.PostForm("type")
-	if logType != "request" && logType != "system" {
-		BadRequest(c, "日志类型必须是 request 或 system")
-		return
-	}
-
-	// 打开文件
-	file, err := fileHeader.Open()
-	if err != nil {
-		InternalServerError(c, "打开文件失败: "+err.Error())
-		return
-	}
-	defer file.Close()
-
-	// 逐行解析并保存
-	successCount := 0
-	failCount := 0
-	scanner := bufio.NewScanner(file)
-	// 增加缓冲区大小，默认 64KB 可能不够处理长日志行
-	const maxScanTokenSize = 1024 * 1024 // 1MB
-	buf := make([]byte, 0, maxScanTokenSize)
-	scanner.Buffer(buf, maxScanTokenSize)
-	batchSize := 100
-
-	if logType == "request" {
-		// 处理请求日志
-		var batch []services.CreateLogRequest
-		for scanner.Scan() {
-			line := scanner.Text()
-			if line == "" {
-				continue
-			}
-
-			var entry map[string]interface{}
-			if err := json.Unmarshal([]byte(line), &entry); err != nil {
-				failCount++
-				continue
-			}
-
-			req := h.parseRequestLogEntry(entry)
-			if req != nil {
-				batch = append(batch, *req)
-				if len(batch) >= batchSize {
-					if h.logService.BatchCreateLogs(batch) == len(batch) {
-						successCount += len(batch)
-					} else {
-						failCount += len(batch)
-					}
-					batch = nil
-				}
-			} else {
-				failCount++
-			}
-		}
-
-		// 处理剩余的批次
-		if len(batch) > 0 {
-			if h.logService.BatchCreateLogs(batch) == len(batch) {
-				successCount += len(batch)
-			} else {
-				failCount += len(batch)
-			}
-		}
-	} else {
-		// 处理系统日志
-		var batch []services.CreateSystemLogRequest
-		for scanner.Scan() {
-			line := scanner.Text()
-			if line == "" {
-				continue
-			}
-
-			var entry map[string]interface{}
-			if err := json.Unmarshal([]byte(line), &entry); err != nil {
-				failCount++
-				continue
-			}
-
-			req := h.parseSystemLogEntry(entry)
-			if req != nil {
-				batch = append(batch, *req)
-				if len(batch) >= batchSize {
-					if count, err := h.systemLogService.BatchCreateSystemLogs(batch); err == nil {
-						successCount += count
-					} else {
-						failCount += len(batch)
-					}
-					batch = nil
-				}
-			} else {
-				failCount++
-			}
-		}
-
-		// 处理剩余的批次
-		if len(batch) > 0 {
-			if count, err := h.systemLogService.BatchCreateSystemLogs(batch); err == nil {
-				successCount += count
-			} else {
-				failCount += len(batch)
-			}
-		}
-	}
-
-	// 检查 scanner 错误，但不影响已处理的结果
-	scanErr := scanner.Err()
-	if scanErr != nil {
-		// 记录错误但仍然返回成功/失败计数
-		failCount++
-	}
+	count := h.logService.BatchCreateLogs(reqs)
 
 	Success(c, gin.H{
-		"success_count": successCount,
-		"fail_count":    failCount,
-		"scan_error":    scanErr != nil,
+		"count": count,
 	})
 }
 
-// parseRequestLogEntry 解析请求日志条目
-func (h *LogHandler) parseRequestLogEntry(entry map[string]interface{}) *services.CreateLogRequest {
-	// 解析时间
-	timeStr, _ := entry["time"].(string)
-	logTime, err := time.Parse("2006-01-02 15:04:05.000", timeStr)
+// BatchCreateSystemLogs 批量创建系统日志记录（proxy 调用）
+// @Summary 批量创建系统日志记录
+// @Description 接收多条系统日志记录的数组，批量保存到数据库
+// @Tags 系统日志
+// @Accept json
+// @Produce json
+// @Param request body []services.CreateSystemLogRequest true "系统日志记录数组"
+// @Success 200 {object} map[string]interface{}
+// @Router /api/system-logs/batch [post]
+func (h *LogHandler) BatchCreateSystemLogs(c *gin.Context) {
+	var reqs []services.CreateSystemLogRequest
+	if err := c.ShouldBindJSON(&reqs); err != nil {
+		BadRequest(c, "参数错误: "+err.Error())
+		return
+	}
+
+	count, err := h.systemLogService.BatchCreateSystemLogs(reqs)
 	if err != nil {
-		// 尝试其他格式
-		logTime, _ = time.Parse(time.RFC3339, timeStr)
-	}
-	if logTime.IsZero() {
-		logTime = time.Now()
+		InternalServerError(c, err.Error())
+		return
 	}
 
-	// 解析 level
-	level, _ := entry["level"].(string)
-	// slog 的 level 可能是数字格式，需要转换
-	if level == "" {
-		if lvl, ok := entry["level"].(float64); ok {
-			switch int(lvl) {
-			case -4:
-				level = "DEBUG"
-			case 0:
-				level = "INFO"
-			case 4:
-				level = "WARN"
-			case 8:
-				level = "ERROR"
-			default:
-				level = "INFO"
-			}
-		}
-	}
-
-	msg, _ := entry["msg"].(string)
-
-	req := &services.CreateLogRequest{
-		Time:  logTime,
-		Level: level,
-		Msg:   msg,
-	}
-
-	// 提取常用字段
-	if v, ok := entry["request_id"].(string); ok {
-		req.RequestID = v
-	}
-	if v, ok := entry["method"].(string); ok {
-		req.Method = v
-	}
-	if v, ok := entry["path"].(string); ok {
-		req.Path = v
-	}
-	if v, ok := entry["query"].(string); ok {
-		req.Query = v
-	}
-	if v, ok := entry["remote_addr"].(string); ok {
-		req.RemoteAddr = v
-	}
-	if v, ok := entry["user_agent"].(string); ok {
-		req.UserAgent = v
-	}
-	if v, ok := entry["x_forwarded_for"].(string); ok {
-		req.XForwardedFor = v
-	}
-	if v, ok := entry["authorization"].(string); ok {
-		req.Authorization = v
-	}
-	if v, ok := entry["request_body"].(string); ok {
-		req.RequestBody = v
-	}
-	if v, ok := entry["status"].(float64); ok {
-		req.Status = int(v)
-	}
-	if v, ok := entry["latency_ms"].(float64); ok {
-		req.LatencyMs = int64(v)
-	}
-	if v, ok := entry["request_size_bytes"].(float64); ok {
-		req.RequestSizeBytes = int(v)
-	}
-	if v, ok := entry["response_size_bytes"].(float64); ok {
-		req.ResponseSizeBytes = int(v)
-	}
-
-	// 解析 request_headers
-	if v, ok := entry["request_headers"].(map[string]interface{}); ok {
-		req.RequestHeaders = make(map[string]string, len(v))
-		for key, val := range v {
-			if strVal, ok := val.(string); ok {
-				req.RequestHeaders[key] = strVal
-			}
-		}
-	} else {
-		req.RequestHeaders = make(map[string]string)
-	}
-
-	// 解析 response_headers
-	if v, ok := entry["response_headers"].(map[string]interface{}); ok {
-		req.ResponseHeaders = make(map[string]string, len(v))
-		for key, val := range v {
-			if strVal, ok := val.(string); ok {
-				req.ResponseHeaders[key] = strVal
-			}
-		}
-	} else {
-		req.ResponseHeaders = make(map[string]string)
-	}
-
-	// 请求日志必须有 request_id，否则跳过
-	if req.RequestID == "" {
-		return nil
-	}
-
-	return req
-}
-
-// parseSystemLogEntry 解析系统日志条目
-func (h *LogHandler) parseSystemLogEntry(entry map[string]interface{}) *services.CreateSystemLogRequest {
-	// 解析时间
-	timeStr, _ := entry["time"].(string)
-	logTime, err := time.Parse("2006-01-02 15:04:05.000", timeStr)
-	if err != nil {
-		logTime, _ = time.Parse(time.RFC3339, timeStr)
-	}
-	if logTime.IsZero() {
-		logTime = time.Now()
-	}
-
-	// 解析 level
-	level, _ := entry["level"].(string)
-	if level == "" {
-		if lvl, ok := entry["level"].(float64); ok {
-			switch int(lvl) {
-			case -4:
-				level = "DEBUG"
-			case 0:
-				level = "INFO"
-			case 4:
-				level = "WARN"
-			case 8:
-				level = "ERROR"
-			default:
-				level = "INFO"
-			}
-		}
-	}
-
-	msg, _ := entry["msg"].(string)
-
-	return &services.CreateSystemLogRequest{
-		Time:  logTime,
-		Level: level,
-		Msg:   msg,
-	}
+	Success(c, gin.H{
+		"count": count,
+	})
 }
 
 // ListSystemLogs 获取系统日志列表（admin 调用）
@@ -494,4 +250,54 @@ func (h *LogHandler) GetSystemLog(c *gin.Context) {
 	}
 
 	Success(c, log)
+}
+
+// DeleteRequestLogs 按时间范围删除请求日志
+// @Summary 按时间范围删除请求日志
+// @Description 根据时间范围删除请求日志记录（硬删除）
+// @Tags 请求日志
+// @Accept json
+// @Produce json
+// @Param request body services.DeleteLogsByTimeRangeRequest true "删除参数"
+// @Success 200 {object} services.DeleteLogsByTimeRangeResponse
+// @Router /api/request-logs/delete [post]
+func (h *LogHandler) DeleteRequestLogs(c *gin.Context) {
+	var req services.DeleteLogsByTimeRangeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		BadRequest(c, "参数错误: "+err.Error())
+		return
+	}
+
+	response, err := h.logService.DeleteLogsByTimeRange(&req)
+	if err != nil {
+		BadRequest(c, err.Error())
+		return
+	}
+
+	Success(c, response)
+}
+
+// DeleteSystemLogs 按时间范围删除系统日志
+// @Summary 按时间范围删除系统日志
+// @Description 根据时间范围删除系统日志记录（硬删除）
+// @Tags 系统日志
+// @Accept json
+// @Produce json
+// @Param request body services.DeleteSystemLogsByTimeRangeRequest true "删除参数"
+// @Success 200 {object} services.DeleteSystemLogsByTimeRangeResponse
+// @Router /api/system-logs/delete [post]
+func (h *LogHandler) DeleteSystemLogs(c *gin.Context) {
+	var req services.DeleteSystemLogsByTimeRangeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		BadRequest(c, "参数错误: "+err.Error())
+		return
+	}
+
+	response, err := h.systemLogService.DeleteSystemLogsByTimeRange(&req)
+	if err != nil {
+		BadRequest(c, err.Error())
+		return
+	}
+
+	Success(c, response)
 }

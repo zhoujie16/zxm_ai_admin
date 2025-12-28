@@ -9,6 +9,6 @@ database:
 
 api:
   # proxy 写入日志用的系统认证令牌
-  system_auth_token: "log-service-write-key-change-in-production"
+  system_auth_token: "zxm-ai-admin-secret-key-change-in-production"
   # 与 server 相同的 JWT secret，用于验证 admin 的 JWT
   jwt_secret: "zxm-ai-admin-secret-key-change-in-production"
