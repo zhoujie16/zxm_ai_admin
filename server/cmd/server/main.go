@@ -183,17 +183,6 @@ func setupRoutes(r *gin.Engine) {
 			tokens.DELETE("/:id/destroy", tokenHandler.DestroyToken)
 		}
 
-		// Token 使用记录相关
-		tokenUsageLogHandler := handlers.NewTokenUsageLogHandler()
-		tokenUsageLogs := api.Group("/token-usage-logs")
-		{
-			// 新增记录（不需要认证，供 proxy 调用）
-			tokenUsageLogs.POST("", tokenUsageLogHandler.CreateTokenUsageLog)
-			// 查询记录（需要认证）
-			tokenUsageLogs.GET("", middleware.AuthMiddleware(), tokenUsageLogHandler.ListTokenUsageLogs)
-			tokenUsageLogs.GET("/:id", middleware.AuthMiddleware(), tokenUsageLogHandler.GetTokenUsageLog)
-		}
-
 	}
 }
 

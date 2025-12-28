@@ -51,6 +51,8 @@ jobs:
           go mod download
           cd ../proxy
           go mod download
+          cd ../log-service
+          go mod download
 
       - name: Build server binary
         run: |
@@ -79,6 +81,19 @@ jobs:
           cd ..
           tar -czf proxy.tar.gz -C proxy-package .
 
+      - name: Build log-service binary (Windows 64)
+        run: |
+          cd log-service
+          GOOS=windows GOARCH=amd64 go build -o bin/log-service.exe cmd/server/main.go
+
+      - name: Package log-service artifact
+        run: |
+          cd log-service
+          mkdir -p ../log-service-package/bin
+          cp bin/log-service.exe ../log-service-package/bin/
+          cd ..
+          tar -czf log-service.tar.gz -C log-service-package .
+
       - name: Upload packages to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -98,6 +113,16 @@ jobs:
           port: 22
           source: "proxy.tar.gz"
           target: "/home/server/zxm_ai_admin/proxy-windows"
+
+      - name: Upload log-service to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          password: ${{ secrets.REMOTE_PASSWORD }}
+          port: 22
+          source: "log-service.tar.gz"
+          target: "/home/server/zxm_ai_admin/log-service-windows"
 
       - name: Deploy on server
         uses: appleboy/ssh-action@v1.0.3
@@ -142,8 +167,10 @@ jobs:
             
             echo "✅ server 后端部署完成"
             
-            # 确保 proxy-windows 目录存在
+            # 确保 Windows 包目录存在
             mkdir -p /home/server/zxm_ai_admin/proxy-windows
-            echo "✅ proxy Windows 64 位版本已上传到 /home/server/zxm_ai_admin/proxy-windows"
+            mkdir -p /home/server/zxm_ai_admin/log-service-windows
+            echo "✅ proxy Windows 包已上传到 /home/server/zxm_ai_admin/proxy-windows"
+            echo "✅ log-service Windows 包已上传到 /home/server/zxm_ai_admin/log-service-windows"
 
 

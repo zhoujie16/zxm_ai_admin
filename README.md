@@ -1,6 +1,6 @@
 # ZXM AI Admin 管理平台
 
-个人工具集合管理平台，包含前端管理界面、后端API服务和代理服务。
+个人工具集合管理平台，包含前端管理界面、后端API服务、代理服务和日志服务。
 
 ## 📁 项目结构
 
@@ -9,6 +9,7 @@ zxm_ai_admin/
 ├── admin/          # 前端管理界面 (React + UmiJS + Ant Design)
 ├── server/         # 后端API服务 (Go + Gin)
 ├── proxy/          # 代理服务 (Go)
+├── log-service/    # 日志服务 (Go + Gin + GORM)
 ├── Makefile        # 统一构建脚本
 └── README.md       # 项目说明文档
 ```
@@ -39,6 +40,9 @@ cd server && go mod download
 
 # 代理服务依赖
 cd proxy && go mod download
+
+# 日志服务依赖
+cd log-service && go mod download
 ```
 
 ### 启动开发环境
@@ -50,10 +54,10 @@ cd proxy && go mod download
 make help
 
 # 分别在不同终端启动各服务
-make dev-admin   # 前端 (http://localhost:6806)
-make dev-server  # 后端 (http://localhost:6808)
-make dev-proxy   # 代理 (http://localhost:6800)
-make dev-proxy   # 代理服务
+make dev-admin       # 前端 (http://localhost:6806)
+make dev-server      # 后端 (http://localhost:6808)
+make dev-proxy       # 代理 (http://localhost:6800)
+make dev-log-service # 日志服务 (http://localhost:6809)
 ```
 
 **方式二：手动启动**
@@ -67,6 +71,9 @@ cd server && go run cmd/server/main.go
 
 # 终端3: 启动代理服务
 cd proxy && go run main.go
+
+# 终端4: 启动日志服务
+cd log-service && go run cmd/server/main.go
 ```
 
 ## 🛠 开发指南
@@ -89,6 +96,13 @@ cd proxy && go run main.go
 - 功能: 反向代理和请求转发
 - 配置: 查看 `proxy/config/config.go`
 
+### 日志服务 (log-service/)
+
+- 技术栈: Go 1.21+ + Gin + GORM + SQLite
+- 功能: 存储 Token 使用记录日志
+- 服务端口: 6809
+- 认证: API Key（写入）、JWT（查询）
+
 ## 📦 构建部署
 
 ### 构建所有项目
@@ -101,13 +115,15 @@ make build
 - `admin/dist/` - 前端构建产物
 - `server/bin/server` - 后端可执行文件
 - `proxy/bin/proxy` - 代理服务可执行文件
+- `log-service/bin/log-service` - 日志服务可执行文件
 
 ### 单独构建
 
 ```bash
-make build-admin   # 仅构建前端
-make build-server  # 仅构建后端
-make build-proxy   # 仅构建代理服务
+make build-admin       # 仅构建前端
+make build-server      # 仅构建后端
+make build-proxy       # 仅构建代理服务
+make build-log-service # 仅构建日志服务
 ```
 
 ## 🧹 清理

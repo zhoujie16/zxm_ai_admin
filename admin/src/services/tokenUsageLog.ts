@@ -14,7 +14,7 @@ import type {
  * @returns 列表数据
  */
 export async function getTokenUsageLogList(params: ITokenUsageLogListRequest = {}) {
-  return get<ITokenUsageLogListResponse>('/api/token-usage-logs', params);
+  return get<ITokenUsageLogListResponse>('/api-logs/request-logs', params);
 }
 
 /**
@@ -23,5 +23,5 @@ export async function getTokenUsageLogList(params: ITokenUsageLogListRequest = {
  * @returns 详情数据
  */
 export async function getTokenUsageLogDetail(id: number) {
-  return get<ITokenUsageLog>(`/api/token-usage-logs/${id}`);
+  return get<ITokenUsageLog>(`/api-logs/request-logs/${id}`);
 }

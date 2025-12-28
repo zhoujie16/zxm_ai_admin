@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -14,15 +15,18 @@ type SystemLogger struct {
 	level   slog.Level
 	mu      sync.Mutex
 	logger  *slog.Logger
-	currentHour string
+	currentHalfHour string
 	file    *os.File
 }
 
 var system = &SystemLogger{}
 
-// getCurrentHour 获取当前小时标识（用于文件名）
-func getCurrentHour() string {
-	return time.Now().Format("2006-01-02_15")
+// getCurrentHalfHour 获取当前半小时标识（用于文件名）
+func getCurrentHalfHour() string {
+	now := time.Now()
+	minute := now.Minute()
+	halfHour := now.Hour()*2 + minute/30
+	return now.Format("2006-01-02_") + fmt.Sprintf("%02d", halfHour)
 }
 
 // Init 初始化系统日志
@@ -43,10 +47,10 @@ func (s *SystemLogger) Init(logDir string, level slog.Level) error {
 
 // rotate 切换日志文件（调用前必须已加锁）
 func (s *SystemLogger) rotate() error {
-	currentHour := getCurrentHour()
+	currentHalfHour := getCurrentHalfHour()
 
-	// 如果小时未变化，无需切换
-	if s.currentHour == currentHour && s.logger != nil {
+	// 如果半小时未变化，无需切换
+	if s.currentHalfHour == currentHalfHour && s.logger != nil {
 		return nil
 	}
 
@@ -56,14 +60,14 @@ func (s *SystemLogger) rotate() error {
 	}
 
 	// 创建新文件
-	filename := filepath.Join(s.logDir, "system-"+currentHour+".log")
+	filename := filepath.Join(s.logDir, "system-"+currentHalfHour+".log")
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
 		return err
 	}
 
 	s.file = file
-	s.currentHour = currentHour
+	s.currentHalfHour = currentHalfHour
 
 	// 创建新的 logger
 	s.logger = slog.New(slog.NewJSONHandler(file, &slog.HandlerOptions{

@@ -1,14 +1,16 @@
 // Package database 数据库连接管理模块
-// 负责初始化SQLite数据库连接，配置连接池，预留数据库迁移功能
+// 负责初始化 SQLite 数据库连接，配置连接池，自动迁移表结构
 package database
 
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"time"
 
-	"zxm_ai_admin/server/internal/config"
-	"zxm_ai_admin/server/internal/models"
+	"zxm_ai_admin/log-service/internal/config"
+	"zxm_ai_admin/log-service/internal/models"
 
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
@@ -22,6 +24,12 @@ func Init() error {
 	cfg := config.GetConfig()
 	if cfg == nil {
 		return fmt.Errorf("配置未初始化")
+	}
+
+	// 确保数据库目录存在
+	dbDir := filepath.Dir(cfg.Database.Path)
+	if err := os.MkdirAll(dbDir, 0755); err != nil {
+		return fmt.Errorf("创建数据库目录失败: %w", err)
 	}
 
 	var err error
@@ -55,9 +63,8 @@ func Init() error {
 // autoMigrate 自动迁移数据库表
 func autoMigrate() error {
 	if err := DB.AutoMigrate(
-		&models.ProxyService{},
-		&models.AIModel{},
-		&models.Token{},
+		&models.TokenUsageLog{},
+		&models.SystemLog{},
 	); err != nil {
 		return fmt.Errorf("数据库迁移失败: %w", err)
 	}
@@ -72,4 +79,3 @@ func Close() error {
 	}
 	return sqlDB.Close()
 }
-

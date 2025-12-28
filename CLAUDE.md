@@ -20,11 +20,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-ZXM AI Admin 是一个个人工具集合管理平台，采用 Monorepo 结构，包含三个独立服务：
+ZXM AI Admin 是一个个人工具集合管理平台，采用 Monorepo 结构，包含四个独立服务：
 
 - **admin/** - 前端管理界面（React + UmiJS + Ant Design），端口 6806
 - **server/** - 后端 API 服务（Go + Gin + GORM），端口 6808
 - **proxy/** - 代理服务（Go），端口 6800
+- **log-service/** - 日志服务（Go + Gin + GORM + SQLite），端口 6809
 
 ---
 
@@ -38,9 +39,10 @@ make install    # 安装所有子项目的依赖
 ### 开发调试
 ```bash
 # 需要在不同终端分别运行
-make dev-admin   # 前端 http://localhost:6806
-make dev-server  # 后端 http://localhost:6808
-make dev-proxy   # 代理 http://localhost:6800
+make dev-admin       # 前端 http://localhost:6806
+make dev-server      # 后端 http://localhost:6808
+make dev-proxy       # 代理 http://localhost:6800
+make dev-log-service # 日志服务 http://localhost:6809
 ```
 
 ### 构建
@@ -150,10 +152,42 @@ utils.InternalServerError(c, message) // 500
 
 ---
 
+## 日志服务架构 (log-service/)
+
+### 技术栈
+- Go 1.21+ + Gin + GORM + SQLite
+- slog 结构化日志
+
+### 功能
+- 存储 Token 使用记录日志
+- 提供 API Key 认证的日志写入接口（供 proxy 调用）
+- 提供 JWT 认证的日志查询接口（供 admin 前端调用）
+
+### 分层架构
+```
+Handlers (internal/handlers/) → Services (internal/services/) → Models (internal/models/)
+```
+
+### 认证方式
+- **写入接口**：使用 API Key（`X-Log-API-Key` 请求头）
+- **查询接口**：使用 JWT Token（与 server 共享 secret）
+
+### 配置管理
+- 配置文件：`configs/config.yaml`
+- 通过 `config.GetConfig()` 获取配置
+
+### 中间件顺序
+1. RecoveryMiddleware - 错误恢复
+2. CORSMiddleware - 跨域
+3. WriteKeyMiddleware - API Key 认证（写入接口）
+4. AuthMiddleware - JWT 认证（查询接口）
+
+---
+
 ## 重要提示
 
 1. **部署路径**：前端部署在 `/zxm-ai-admin/` 非根目录
-2. **端口分配**：6800 代理、6806 前端、6808 后端
-3. **认证方式**：后端使用 JWT Bearer Token
+2. **端口分配**：6800 代理、6806 前端、6808 后端、6809 日志服务
+3. **认证方式**：后端和日志服务使用 JWT Bearer Token，共享同一 secret
 4. **代理限制**：代理仅在开发环境有效
-5. **数据库**：SQLite 文件默认在 `./data/app.db`
+5. **数据库**：SQLite 文件默认在 `./data/app.db`，日志服务数据库在 `log-service/data/logs.db`

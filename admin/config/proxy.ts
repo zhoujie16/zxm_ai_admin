@@ -12,22 +12,17 @@
 export default {
   // 如果需要自定义本地开发服务器  请取消注释按需调整
   dev: {
-    // localhost:6806/api/** -> http://localhost:6808/api/**
-    '/api/': {
-      // 要代理的地址
-      target: 'http://localhost:6808',
-      // 配置了这个可以从 http 代理到 https
-      // 依赖 origin 的功能可能需要这个，比如 cookie
-      changeOrigin: true,
-    },
     // localhost:6806/zxm-ai-admin/api/** -> http://localhost:6808/api/**
     '/zxm-ai-admin/api/': {
-      // 要代理的地址
       target: 'http://localhost:6808',
-      // 配置了这个可以从 http 代理到 https
-      // 依赖 origin 的功能可能需要这个，比如 cookie
       changeOrigin: true,
       pathRewrite: { '^/zxm-ai-admin': '' },
+    },
+    // 日志服务代理
+    '/zxm-ai-admin/api-logs/': {
+      target: 'http://localhost:6809',
+      changeOrigin: true,
+      pathRewrite: { '^/zxm-ai-admin/api-logs': '/api' },
     },
   },
 };
