@@ -121,7 +121,7 @@ func (p *Parser) parseSystemLog(line string) (*SystemLogEntry, error) {
 
 	// 设置默认值
 	if timeStr == "" {
-		timeStr = time.Now().Format(time.RFC3339)
+		timeStr = time.Now().Format("2006-01-02T15:04:05.000-07:00")
 	}
 	if level == "" {
 		level = "INFO"

@@ -2,9 +2,6 @@
  * 工具函数
  */
 import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
-
-dayjs.extend(utc);
 
 /** 获取最近7天时间范围 */
 export const getLastWeekRange = (): [dayjs.Dayjs, dayjs.Dayjs] => {
@@ -32,10 +29,10 @@ export const timeRangePresets: Array<{ label: string; value: () => [dayjs.Dayjs,
   { label: '最近30天', value: () => [dayjs().subtract(30, 'day').startOf('day'), dayjs().endOf('day')] },
 ];
 
-/** 格式化时间（使用 UTC 时间） */
+/** 格式化时间 */
 export const formatDateTime = (text: string): string => {
   try {
-    return dayjs.utc(text).format('YYYY-MM-DD HH:mm:ss');
+    return dayjs(text).format('YYYY-MM-DD HH:mm:ss');
   } catch {
     return text;
   }

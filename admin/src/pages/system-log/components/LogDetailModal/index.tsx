@@ -4,6 +4,7 @@
  */
 import { Modal, Descriptions, Tag } from 'antd';
 import React, { useMemo } from 'react';
+import dayjs from 'dayjs';
 import type { ISystemLog } from '@/types/systemLog';
 
 /**
@@ -23,7 +24,7 @@ export interface ILogDetailModalProps {
  */
 const formatDateTime = (text: string): string => {
   try {
-    return new Date(text).toLocaleString('zh-CN');
+    return dayjs(text).format('YYYY-MM-DD HH:mm:ss');
   } catch {
     return text;
   }

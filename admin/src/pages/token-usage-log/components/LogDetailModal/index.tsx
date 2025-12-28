@@ -5,6 +5,7 @@
 import { Modal, Descriptions, Tag, Badge, Tabs, Typography, Button, Space } from 'antd';
 import { CopyOutlined } from '@ant-design/icons';
 import React from 'react';
+import dayjs from 'dayjs';
 import type { ITokenUsageLog } from '@/types/tokenUsageLog';
 import { message } from 'antd';
 
@@ -27,7 +28,7 @@ export interface ILogDetailModalProps {
  */
 const formatDateTime = (text: string): string => {
   try {
-    return new Date(text).toLocaleString('zh-CN');
+    return dayjs(text).format('YYYY-MM-DD HH:mm:ss');
   } catch {
     return text;
   }
