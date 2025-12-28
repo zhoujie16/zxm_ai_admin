@@ -11,11 +11,12 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig   `mapstructure:"server"`
-	Database DatabaseConfig `mapstructure:"database"`
-	Admin    AdminConfig    `mapstructure:"admin"`
-	JWT      JWTConfig      `mapstructure:"jwt"`
-	Log      LogConfig      `mapstructure:"log"`
+	Server          ServerConfig   `mapstructure:"server"`
+	Database        DatabaseConfig `mapstructure:"database"`
+	Admin           AdminConfig    `mapstructure:"admin"`
+	JWT             JWTConfig      `mapstructure:"jwt"`
+	Log             LogConfig      `mapstructure:"log"`
+	SystemAuthToken string         `mapstructure:"system_auth_token"`
 }
 
 type ServerConfig struct {

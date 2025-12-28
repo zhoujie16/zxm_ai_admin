@@ -175,13 +175,15 @@ func setupRoutes(r *gin.Engine) {
 			tokens.POST("", tokenHandler.CreateToken)
 			tokens.GET("", tokenHandler.ListTokens)
 			tokens.GET("/recycle", tokenHandler.ListRecycledTokens)
-			tokens.GET("/with-model", tokenHandler.ListAllTokensWithModel)
 			tokens.GET("/:id", tokenHandler.GetToken)
 			tokens.PUT("/:id", tokenHandler.UpdateToken)
 			tokens.DELETE("/:id", tokenHandler.DeleteToken)
 			tokens.POST("/:id/restore", tokenHandler.RestoreToken)
 			tokens.DELETE("/:id/destroy", tokenHandler.DestroyToken)
 		}
+
+		// Token 与模型关联接口（proxy 使用系统认证令牌调用）
+		api.GET("/tokens/with-model", middleware.SystemAuthMiddleware(), tokenHandler.ListAllTokensWithModel)
 
 	}
 }

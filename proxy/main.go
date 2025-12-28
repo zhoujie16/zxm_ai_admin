@@ -33,7 +33,7 @@ func main() {
 	}
 
 	// 创建 token 缓存
-	tokenCache := cache.New(cfg.ServerBaseURL, cfg.ServerUsername, cfg.ServerPassword)
+	tokenCache := cache.New(cfg.ServerBaseURL, cfg.SystemAuthToken)
 	cacheDone := make(chan struct{})
 
 	// 启动缓存同步（异步）

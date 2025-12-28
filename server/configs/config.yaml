@@ -15,6 +15,8 @@ jwt:
   secret: "zxm-ai-admin-secret-key-change-in-production"
   expire_hours: 24
 
+system_auth_token: "zxm-ai-admin-secret-key-change-in-production"
+
 log:
   level: info  # debug, info, warn, error
   output: "./logs/app.log"

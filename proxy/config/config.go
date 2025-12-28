@@ -10,12 +10,11 @@ import (
 
 // Config 代理配置
 type Config struct {
-	LogLevel           string `mapstructure:"log_level"`
-	ListenAddr         string `mapstructure:"listen_addr"`
-	ServerBaseURL      string `mapstructure:"server_base_url"`
-	ServerUsername     string `mapstructure:"server_username"`
-	ServerPassword     string `mapstructure:"server_password"`
-	SyncInterval       int    `mapstructure:"sync_interval"`
+	LogLevel         string `mapstructure:"log_level"`
+	ListenAddr       string `mapstructure:"listen_addr"`
+	ServerBaseURL    string `mapstructure:"server_base_url"`
+	SystemAuthToken  string `mapstructure:"system_auth_token"`
+	SyncInterval     int    `mapstructure:"sync_interval"`
 }
 
 var appConfig *Config
