@@ -3,94 +3,50 @@
  * 功能：查询和查看系统日志
  */
 import { Card } from 'antd';
-import React, { useCallback, useState } from 'react';
-import { useSystemLog } from './hooks/useSystemLog';
-import SystemLogFilter from './components/SystemLogFilter';
-import SystemLogTable from './components/SystemLogTable';
+import React from 'react';
+import { ProTable } from '@ant-design/pro-components';
+import type { ActionType } from '@ant-design/pro-components';
 import LogDetailModal from './components/LogDetailModal';
 import type { ISystemLog, ISystemLogListRequest } from '@/types/systemLog';
+import { getColumns } from './columns';
+import { useDetailModal } from './useDetailModal';
+import { useRequestLog } from './useRequestLog';
 import './index.less';
 
-/**
- * 系统日志页面组件
- */
 const SystemLogPage: React.FC = () => {
-  const {
-    dataSource,
-    total,
-    loading,
-    pagination,
-    loadData,
-  } = useSystemLog();
+  const { detailVisible, detailRecord, handleViewDetail, handleCloseDetail } = useDetailModal();
+  const requestLog = useRequestLog();
+  const actionRef = React.useRef<ActionType>(null);
 
-  const [detailVisible, setDetailVisible] = useState(false);
-  const [detailRecord, setDetailRecord] = useState<ISystemLog | null>(null);
-  const [filterParams, setFilterParams] = useState<ISystemLogListRequest>({});
-
-  /**
-   * 处理过滤条件变化
-   */
-  const handleFilterChange = useCallback((params: ISystemLogListRequest) => {
-    setFilterParams(params);
-  }, []);
-
-  /**
-   * 处理表格分页变化
-   */
-  const handleTablePageChange = useCallback((page: number, pageSize: number) => {
-    loadData(page, pageSize, filterParams);
-  }, [loadData, filterParams]);
-
-  /**
-   * 处理刷新
-   */
-  const handleRefresh = useCallback(() => {
-    loadData(pagination.current, pagination.pageSize, filterParams);
-  }, [loadData, pagination, filterParams]);
-
-  /**
-   * 查看详情
-   */
-  const handleViewDetail = useCallback(async (record: ISystemLog) => {
-    setDetailRecord(record);
-    setDetailVisible(true);
-  }, []);
-
-  /**
-   * 关闭详情弹窗
-   */
-  const handleCloseDetail = useCallback(() => {
-    setDetailVisible(false);
-    setDetailRecord(null);
-  }, []);
+  const columns = getColumns({ onViewDetail: handleViewDetail });
 
   return (
     <div className="system-log-page">
       <Card>
-        <SystemLogFilter
-          onFilterChange={handleFilterChange}
-          onRefresh={handleRefresh}
-          loading={loading}
-        />
-
-        <SystemLogTable
-          dataSource={dataSource}
-          loading={loading}
-          pagination={{
-            current: pagination.current,
-            pageSize: pagination.pageSize,
-            total: total,
+        <ProTable<ISystemLog, ISystemLogListRequest & { timeRange?: [string, string] }>
+          columns={columns}
+          actionRef={actionRef}
+          request={requestLog}
+          rowKey="id"
+          search={{
+            defaultCollapsed: false,
+            span: 6,
           }}
-          onPageChange={handleTablePageChange}
-          onViewDetail={handleViewDetail}
-        />
-
-        <LogDetailModal
-          visible={detailVisible}
-          record={detailRecord}
-          onCancel={handleCloseDetail}
+          pagination={{
+            defaultPageSize: 10,
+            showSizeChanger: true,
+            showQuickJumper: true,
+          }}
+          options={false}
+          scroll={{ x: 800 }}
         />
       </Card>
+
+      <LogDetailModal
+        visible={detailVisible}
+        record={detailRecord}
+        onCancel={handleCloseDetail}
+      />
     </div>
   );
 };
