@@ -16,8 +16,6 @@ type Config struct {
 	ServerUsername     string `mapstructure:"server_username"`
 	ServerPassword     string `mapstructure:"server_password"`
 	SyncInterval       int    `mapstructure:"sync_interval"`
-	LogServiceURL      string `mapstructure:"log_service_url"`
-	SystemAuthToken    string `mapstructure:"system_auth_token"`
 }
 
 var appConfig *Config

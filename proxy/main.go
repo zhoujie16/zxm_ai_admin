@@ -11,7 +11,6 @@ import (
 	"proxy/logger"
 	"proxy/middleware"
 	"proxy/proxy"
-	"proxy/uploader"
 )
 
 func main() {
@@ -31,13 +30,6 @@ func main() {
 
 	if err := logger.Request.Init(logDir, logLevel); err != nil {
 		panic("请求日志初始化失败: " + err.Error())
-	}
-
-	// 启动日志上传器
-	logUploader := uploader.New(logDir, cfg.LogServiceURL, cfg.SystemAuthToken)
-	if logUploader != nil {
-		logUploader.Start()
-		defer logUploader.Stop()
 	}
 
 	// 创建 token 缓存
