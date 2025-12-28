@@ -14,7 +14,7 @@ import type {
  * @returns 列表数据
  */
 export async function getSystemLogList(params: ISystemLogListRequest = {}) {
-  return get<ISystemLogListResponse>('/api-logs/system-logs', params);
+  return get<ISystemLogListResponse>('/api-logs/api/system-logs', params);
 }
 
 /**
@@ -23,5 +23,5 @@ export async function getSystemLogList(params: ISystemLogListRequest = {}) {
  * @returns 详情数据
  */
 export async function getSystemLogDetail(id: number) {
-  return get<ISystemLog>(`/api-logs/system-logs/${id}`);
+  return get<ISystemLog>(`/api-logs/api/system-logs/${id}`);
 }

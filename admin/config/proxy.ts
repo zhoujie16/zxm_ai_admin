@@ -22,7 +22,7 @@ export default {
     '/zxm-ai-admin/api-logs/': {
       target: 'http://localhost:6809',
       changeOrigin: true,
-      pathRewrite: { '^/zxm-ai-admin/api-logs': '/api' },
+      pathRewrite: { '^/zxm-ai-admin/api-logs': '' },
     },
   },
 };
