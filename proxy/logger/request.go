@@ -15,7 +15,7 @@ type RequestLogger struct {
 	level   slog.Level
 	mu      sync.Mutex
 	logger  *slog.Logger
-	currentHalfHour string
+	currentTimestamp string
 	file    *os.File
 }
 
@@ -39,10 +39,10 @@ func (r *RequestLogger) Init(logDir string, level slog.Level) error {
 
 // rotate 切换日志文件（调用前必须已加锁）
 func (r *RequestLogger) rotate() error {
-	currentHalfHour := getCurrentHalfHour()
+	currentTimestamp := getCurrentHalfHour()
 
 	// 如果半小时未变化，无需切换
-	if r.currentHalfHour == currentHalfHour && r.logger != nil {
+	if r.currentTimestamp == currentTimestamp && r.logger != nil {
 		return nil
 	}
 
@@ -52,14 +52,14 @@ func (r *RequestLogger) rotate() error {
 	}
 
 	// 创建新文件
-	filename := filepath.Join(r.logDir, "request-"+currentHalfHour+".log")
+	filename := filepath.Join(r.logDir, "request-"+currentTimestamp+".log")
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
 		return err
 	}
 
 	r.file = file
-	r.currentHalfHour = currentHalfHour
+	r.currentTimestamp = currentTimestamp
 
 	// 创建新的 logger
 	r.logger = slog.New(slog.NewJSONHandler(file, &slog.HandlerOptions{
