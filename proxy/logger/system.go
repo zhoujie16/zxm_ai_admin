@@ -74,7 +74,7 @@ func (s *SystemLogger) rotate() error {
 		Level: s.level,
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 			if a.Key == slog.TimeKey {
-				a.Value = slog.StringValue(time.Now().Format("2006-01-02 15:04:05.000"))
+				a.Value = slog.StringValue(time.Now().UTC().Format(time.RFC3339))
 			}
 			return a
 		},
