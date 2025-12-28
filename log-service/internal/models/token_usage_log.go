@@ -41,7 +41,7 @@ type TokenUsageLog struct {
 	Time              time.Time       `json:"time" gorm:"not null;index"`
 	Level             string          `json:"level" gorm:"size:20"`
 	Msg               string          `json:"msg" gorm:"size:200"`
-	RequestID         string          `json:"request_id" gorm:"size:64;uniqueIndex"`
+	RequestID         string          `json:"request_id" gorm:"size:64;unique"`
 	Method            string          `json:"method" gorm:"size:10;index"`
 	Path              string          `json:"path" gorm:"size:500;index"`
 	Query             string          `json:"query" gorm:"size:1000"`

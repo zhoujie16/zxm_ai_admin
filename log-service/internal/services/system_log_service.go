@@ -7,7 +7,9 @@ import (
 	"time"
 	"zxm_ai_admin/log-service/internal/config"
 	"zxm_ai_admin/log-service/internal/database"
+	"zxm_ai_admin/log-service/internal/logger"
 	"zxm_ai_admin/log-service/internal/models"
+	"zxm_ai_admin/log-service/internal/utils"
 
 	"gorm.io/gorm/clause"
 )
@@ -21,10 +23,10 @@ func NewSystemLogService() *SystemLogService {
 
 // CreateSystemLogRequest 创建系统日志请求
 type CreateSystemLogRequest struct {
-	RequestID string    `json:"request_id"`
-	Time      time.Time `json:"time"`
-	Level     string    `json:"level"`
-	Msg       string    `json:"msg"`
+	RequestID string `json:"request_id"`
+	Time      string `json:"time"` // 接受字符串格式，在服务层转换为 time.Time
+	Level     string `json:"level"`
+	Msg       string `json:"msg"`
 }
 
 // BatchCreateSystemLogsRequest 批量创建系统日志请求
@@ -34,9 +36,11 @@ type BatchCreateSystemLogsRequest struct {
 
 // CreateSystemLog 创建系统日志记录
 func (s *SystemLogService) CreateSystemLog(req *CreateSystemLogRequest) (*models.SystemLog, error) {
+	parsedTime := utils.ParseTime(req.Time)
+
 	log := &models.SystemLog{
 		RequestID: req.RequestID,
-		Time:      req.Time,
+		Time:      parsedTime,
 		Level:     req.Level,
 		Msg:       req.Msg,
 	}
@@ -51,28 +55,44 @@ func (s *SystemLogService) CreateSystemLog(req *CreateSystemLogRequest) (*models
 // BatchCreateSystemLogs 批量创建系统日志记录（忽略重复 request_id）
 func (s *SystemLogService) BatchCreateSystemLogs(reqs []CreateSystemLogRequest) (int, error) {
 	if len(reqs) == 0 {
+		logger.Warn("批量创建系统日志：请求为空")
 		return 0, nil
 	}
 
 	logs := make([]models.SystemLog, 0, len(reqs))
 	for _, req := range reqs {
+		parsedTime := utils.ParseTime(req.Time)
+
 		logs = append(logs, models.SystemLog{
 			RequestID: req.RequestID,
-			Time:      req.Time,
+			Time:      parsedTime,
 			Level:     req.Level,
 			Msg:       req.Msg,
 		})
 	}
 
+	logger.Debug("批量创建系统日志：准备插入数据库", "total_count", len(logs))
+
 	// 使用 OnConflict 忽略重复的 request_id
-	if err := database.DB.Clauses(clause.OnConflict{
+	result := database.DB.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "request_id"}},
 		DoNothing: true,
-	}).Create(&logs).Error; err != nil {
+	}).Create(&logs)
+
+	if result.Error != nil {
+		logger.Error("批量创建系统日志：数据库插入失败", "error", result.Error, "total_count", len(logs))
 		return 0, errors.New("批量创建系统日志记录失败")
 	}
 
-	return len(logs), nil
+	insertedCount := int(result.RowsAffected)
+	if insertedCount == 0 {
+		logger.Warn("批量创建系统日志：没有新记录插入（可能所有记录都已存在）", "total_count", len(logs))
+	} else {
+		logger.Info("批量创建系统日志：插入成功", "total_count", len(logs), "inserted_count", insertedCount)
+	}
+
+	// 返回实际插入的记录数
+	return insertedCount, nil
 }
 
 // ListSystemLogsRequest 系统日志列表查询请求

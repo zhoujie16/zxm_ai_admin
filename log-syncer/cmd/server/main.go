@@ -192,10 +192,16 @@ func processLogFile(
 
 		if result.Success {
 			successCount++
+			applogger.Info("批次上传成功",
+				"batch", i+1,
+				"total", len(batches),
+				"batch_size", len(batch),
+			)
 		} else {
 			applogger.Error("批次上传失败",
 				"batch", i+1,
 				"total", len(batches),
+				"batch_size", len(batch),
 				"error", result.Error,
 			)
 			return result.Error // 失败不重试，直接返回

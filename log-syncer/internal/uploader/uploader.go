@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 )
@@ -49,13 +49,17 @@ func (u *Uploader) UploadSystemLogs(entries []interface{}) error {
 
 // upload 执行上传
 func (u *Uploader) upload(url string, entries []interface{}) error {
+	slog.Debug("开始上传", "url", url, "entries_count", len(entries))
+
 	body, err := json.Marshal(entries)
 	if err != nil {
+		slog.Error("序列化数据失败", "error", err, "url", url, "entries_count", len(entries))
 		return fmt.Errorf("序列化数据失败: %w", err)
 	}
 
 	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
 	if err != nil {
+		slog.Error("创建请求失败", "error", err, "url", url)
 		return fmt.Errorf("创建请求失败: %w", err)
 	}
 
@@ -68,12 +72,14 @@ func (u *Uploader) upload(url string, entries []interface{}) error {
 
 	resp, err := client.Do(req)
 	if err != nil {
+		slog.Error("请求失败", "error", err, "url", url, "entries_count", len(entries))
 		return fmt.Errorf("请求失败: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
+		slog.Error("上传失败：HTTP状态码错误", "status", resp.StatusCode, "response", string(respBody), "url", url, "entries_count", len(entries))
 		return fmt.Errorf("上传失败 (status=%d): %s", resp.StatusCode, string(respBody))
 	}
 
@@ -87,14 +93,20 @@ func (u *Uploader) upload(url string, entries []interface{}) error {
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		slog.Error("解析响应失败", "error", err, "url", url, "entries_count", len(entries))
 		return fmt.Errorf("解析响应失败: %w", err)
 	}
 
 	if result.Code != 0 {
+		slog.Error("上传失败", "code", result.Code, "message", result.Message, "url", url, "entries_count", len(entries))
 		return fmt.Errorf("上传失败: %s", result.Message)
 	}
 
-	log.Printf("上传成功: %d 条记录", result.Data.Count)
+	if result.Data.Count == 0 {
+		slog.Warn("上传成功但插入0条记录", "url", url, "entries_count", len(entries), "inserted_count", result.Data.Count)
+	} else {
+		slog.Info("上传成功", "url", url, "entries_count", len(entries), "inserted_count", result.Data.Count)
+	}
 	return nil
 }
 

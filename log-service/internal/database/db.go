@@ -68,6 +68,43 @@ func autoMigrate() error {
 	); err != nil {
 		return fmt.Errorf("数据库迁移失败: %w", err)
 	}
+
+	// 修复 token_usage_logs 表的 request_id UNIQUE 约束
+	if err := fixTokenUsageLogsUniqueConstraint(); err != nil {
+		return fmt.Errorf("修复 token_usage_logs UNIQUE 约束失败: %w", err)
+	}
+
+	return nil
+}
+
+// fixTokenUsageLogsUniqueConstraint 修复 token_usage_logs 表的 request_id UNIQUE 约束
+func fixTokenUsageLogsUniqueConstraint() error {
+	// 检查是否已存在 UNIQUE 索引
+	var count int64
+	if err := DB.Raw(`
+		SELECT COUNT(*) FROM sqlite_master 
+		WHERE type='index' 
+		AND name='idx_token_usage_logs_request_id' 
+		AND sql LIKE '%UNIQUE%'
+	`).Scan(&count).Error; err != nil {
+		return err
+	}
+
+	// 如果不存在 UNIQUE 索引，则创建
+	if count == 0 {
+		// 删除旧的普通索引
+		if err := DB.Exec(`DROP INDEX IF EXISTS idx_token_usage_logs_request_id`).Error; err != nil {
+			return err
+		}
+
+		// 创建 UNIQUE 索引（等同于 UNIQUE 约束）
+		if err := DB.Exec(`CREATE UNIQUE INDEX idx_token_usage_logs_request_id ON token_usage_logs(request_id)`).Error; err != nil {
+			return err
+		}
+
+		logger.Info("已为 token_usage_logs 表添加 request_id UNIQUE 约束")
+	}
+
 	return nil
 }
 

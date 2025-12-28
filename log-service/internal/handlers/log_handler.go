@@ -5,6 +5,7 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"zxm_ai_admin/log-service/internal/logger"
 	"zxm_ai_admin/log-service/internal/services"
 
 	"github.com/gin-gonic/gin"
@@ -159,11 +160,16 @@ func (h *LogHandler) GetLog(c *gin.Context) {
 func (h *LogHandler) BatchCreateRequestLogs(c *gin.Context) {
 	var reqs []services.CreateLogRequest
 	if err := c.ShouldBindJSON(&reqs); err != nil {
+		logger.Error("批量创建请求日志失败：参数绑定错误", "error", err)
 		BadRequest(c, "参数错误: "+err.Error())
 		return
 	}
 
+	logger.Info("批量创建请求日志", "received_count", len(reqs))
+
 	count := h.logService.BatchCreateLogs(reqs)
+
+	logger.Info("批量创建请求日志完成", "received_count", len(reqs), "inserted_count", count)
 
 	Success(c, gin.H{
 		"count": count,
@@ -182,15 +188,21 @@ func (h *LogHandler) BatchCreateRequestLogs(c *gin.Context) {
 func (h *LogHandler) BatchCreateSystemLogs(c *gin.Context) {
 	var reqs []services.CreateSystemLogRequest
 	if err := c.ShouldBindJSON(&reqs); err != nil {
+		logger.Error("批量创建系统日志失败：参数绑定错误", "error", err)
 		BadRequest(c, "参数错误: "+err.Error())
 		return
 	}
 
+	logger.Info("批量创建系统日志", "received_count", len(reqs))
+
 	count, err := h.systemLogService.BatchCreateSystemLogs(reqs)
 	if err != nil {
+		logger.Error("批量创建系统日志失败", "error", err, "received_count", len(reqs))
 		InternalServerError(c, err.Error())
 		return
 	}
+
+	logger.Info("批量创建系统日志完成", "received_count", len(reqs), "inserted_count", count)
 
 	Success(c, gin.H{
 		"count": count,

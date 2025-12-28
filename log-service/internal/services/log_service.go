@@ -9,7 +9,9 @@ import (
 	"time"
 	"zxm_ai_admin/log-service/internal/config"
 	"zxm_ai_admin/log-service/internal/database"
+	"zxm_ai_admin/log-service/internal/logger"
 	"zxm_ai_admin/log-service/internal/models"
+	"zxm_ai_admin/log-service/internal/utils"
 
 	"gorm.io/gorm/clause"
 )
@@ -23,7 +25,7 @@ func NewLogService() *LogService {
 
 // CreateLogRequest 创建日志请求
 type CreateLogRequest struct {
-	Time              time.Time         `json:"time"`
+	Time              string            `json:"time"` // 接受字符串格式，在服务层转换为 time.Time
 	Level             string            `json:"level"`
 	Msg               string            `json:"msg"`
 	RequestID         string            `json:"request_id"`
@@ -63,8 +65,10 @@ type ListLogsResponse struct {
 
 // CreateLog 创建日志记录
 func (s *LogService) CreateLog(req *CreateLogRequest) (*models.TokenUsageLog, error) {
+	parsedTime := utils.ParseTime(req.Time)
+
 	log := &models.TokenUsageLog{
-		Time:              req.Time,
+		Time:              parsedTime,
 		Level:             req.Level,
 		Msg:               req.Msg,
 		RequestID:         req.RequestID,
@@ -178,13 +182,16 @@ func (s *LogService) GetLog(id uint) (*models.TokenUsageLog, error) {
 // BatchCreateLogs 批量创建日志记录（忽略重复 request_id）
 func (s *LogService) BatchCreateLogs(reqs []CreateLogRequest) int {
 	if len(reqs) == 0 {
+		logger.Warn("批量创建日志：请求为空")
 		return 0
 	}
 
 	logs := make([]models.TokenUsageLog, 0, len(reqs))
 	for _, req := range reqs {
+		parsedTime := utils.ParseTime(req.Time)
+
 		logs = append(logs, models.TokenUsageLog{
-			Time:              req.Time,
+			Time:              parsedTime,
 			Level:             req.Level,
 			Msg:               req.Msg,
 			RequestID:         req.RequestID,
@@ -205,15 +212,28 @@ func (s *LogService) BatchCreateLogs(reqs []CreateLogRequest) int {
 		})
 	}
 
+	logger.Debug("批量创建日志：准备插入数据库", "total_count", len(logs))
+
 	// 使用 OnConflict 忽略重复的 request_id
-	if err := database.DB.Clauses(clause.OnConflict{
+	result := database.DB.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "request_id"}},
 		DoNothing: true,
-	}).Create(&logs).Error; err != nil {
+	}).Create(&logs)
+
+	if result.Error != nil {
+		logger.Error("批量创建日志：数据库插入失败", "error", result.Error, "total_count", len(logs))
 		return 0
 	}
 
-	return len(logs)
+	insertedCount := int(result.RowsAffected)
+	if insertedCount == 0 {
+		logger.Warn("批量创建日志：没有新记录插入（可能所有记录都已存在）", "total_count", len(logs))
+	} else {
+		logger.Info("批量创建日志：插入成功", "total_count", len(logs), "inserted_count", insertedCount)
+	}
+
+	// 返回实际插入的记录数
+	return insertedCount
 }
 
 // DeleteLogsByTimeRangeRequest 按时间范围删除请求日志
