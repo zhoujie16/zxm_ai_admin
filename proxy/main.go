@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
+	"time"
 
 	"proxy/cache"
 	"proxy/config"
@@ -35,9 +38,14 @@ func main() {
 	// 创建 token 缓存
 	tokenCache := cache.New(cfg.ServerBaseURL, cfg.SystemAuthToken)
 	cacheDone := make(chan struct{})
+	var cacheWg sync.WaitGroup
 
 	// 启动缓存同步（异步）
-	go tokenCache.StartSync(cfg.SyncInterval, cacheDone)
+	cacheWg.Add(1)
+	go func() {
+		defer cacheWg.Done()
+		tokenCache.StartSync(cfg.SyncInterval, cacheDone)
+	}()
 
 	logger.Info("token 动态路由已启用",
 		"server_base_url", cfg.ServerBaseURL,
@@ -61,9 +69,18 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
+	// 创建 HTTP 服务器
+	server := &http.Server{
+		Addr:    cfg.ListenAddr,
+		Handler: handler,
+	}
+
 	// 启动 HTTP 服务器
+	var serverWg sync.WaitGroup
+	serverWg.Add(1)
 	go func() {
-		if err := listenAndServe(cfg.ListenAddr, handler); err != nil {
+		defer serverWg.Done()
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Error("服务器启动失败", "error", err)
 			close(cacheDone)
 			os.Exit(1)
@@ -77,10 +94,17 @@ func main() {
 	// 停止缓存同步
 	close(cacheDone)
 
+	// 优雅关闭 HTTP 服务器
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		logger.Error("服务器关闭失败", "error", err)
+	}
+
+	// 等待所有 goroutine 退出
+	cacheWg.Wait()
+	serverWg.Wait()
+
 	logger.Info("服务器已关闭")
 }
 
-// listenAndServe 封装 http.ListenAndServe 以便测试
-var listenAndServe = func(addr string, handler http.Handler) error {
-	return http.ListenAndServe(addr, handler)
-}

@@ -2,6 +2,7 @@ package cache
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -103,13 +104,19 @@ func (c *TokenCache) Sync() error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		// 状态码非 200，读取并丢弃响应体，避免连接泄漏
+		_, _ = io.Copy(io.Discard, resp.Body)
 		return &APIError{StatusCode: resp.StatusCode, Message: "API 返回状态码: " + http.StatusText(resp.StatusCode)}
 	}
 
+	// 解析 JSON 响应
 	var apiResp APIResponse
 	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
+		// 解析失败，读取并丢弃剩余响应体，避免连接泄漏
+		_, _ = io.Copy(io.Discard, resp.Body)
 		return err
 	}
+	// 解析成功时，json.Decoder 已完全读取响应体，无需额外处理
 
 	if apiResp.Code != 0 {
 		return &APIError{StatusCode: resp.StatusCode, Message: apiResp.Message}

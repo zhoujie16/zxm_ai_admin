@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -42,7 +43,19 @@ func (p *Proxy) Handler() http.Handler {
 		// 读取请求体
 		var requestBody []byte
 		if r.Body != nil {
-			requestBody, _ = io.ReadAll(r.Body)
+			var err error
+			requestBody, err = io.ReadAll(r.Body)
+			if err != nil {
+				requestID := logger.RequestIDFromContext(ctx)
+				logger.Error("读取请求体失败",
+					"request_id", requestID,
+					"method", r.Method,
+					"path", r.URL.Path,
+					"error", err,
+				)
+				http.Error(w, "Bad Request: Failed to read request body", http.StatusBadRequest)
+				return
+			}
 			r.Body.Close()
 			r.Body = io.NopCloser(bytes.NewReader(requestBody))
 		}
@@ -64,9 +77,11 @@ func (p *Proxy) Handler() http.Handler {
 
 // serveHTTP 执行代理逻辑
 func (p *Proxy) serveHTTP(wrapped *ResponseWrapper, r *http.Request) {
+	ctx := r.Context()
+	requestID := logger.RequestIDFromContext(ctx)
+
 	// 检查缓存是否就绪
 	if !p.tokenCache.Ready() {
-		requestID := logger.RequestIDFromContext(r.Context())
 		logger.Warn("缓存未就绪，拒绝请求",
 			"request_id", requestID,
 			"method", r.Method,
@@ -82,7 +97,6 @@ func (p *Proxy) serveHTTP(wrapped *ResponseWrapper, r *http.Request) {
 	// 查找 token 配置
 	model, exists := p.tokenCache.Lookup(authHeader)
 	if !exists {
-		requestID := logger.RequestIDFromContext(r.Context())
 		logger.Warn("token 不在缓存中，拒绝请求",
 			"request_id", requestID,
 			"method", r.Method,
@@ -97,7 +111,6 @@ func (p *Proxy) serveHTTP(wrapped *ResponseWrapper, r *http.Request) {
 	// 获取或创建目标代理
 	targetProxy := p.getProxy(model.AIModelAPIURL)
 	if targetProxy == nil {
-		requestID := logger.RequestIDFromContext(r.Context())
 		logger.Error("无法创建目标代理",
 			"request_id", requestID,
 			"method", r.Method,
@@ -171,9 +184,16 @@ func createReverseProxy(targetURL string) (*httputil.ReverseProxy, error) {
 		req.Host = req.URL.Host
 	}
 
-	// 自定义 Transport
+	// 自定义 Transport（配置超时，适配 AI 接口长输出场景）
 	p.Transport = &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
+		Proxy:                 http.ProxyFromEnvironment,
+		DialContext:           nil, // 使用默认 DialContext
+		MaxIdleConns:          200,
+		MaxIdleConnsPerHost:   20,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		ResponseHeaderTimeout: 5 * time.Minute, // AI 接口可能需要较长时间才开始返回响应头
 	}
 
 	// 错误处理
@@ -232,17 +252,8 @@ func headersToMap(h http.Header) map[string]string {
 	}
 	result := make(map[string]string, len(h))
 	for k, v := range h {
-		if len(v) == 1 {
-			result[k] = v[0]
-		} else if len(v) > 1 {
-			joined := ""
-			for i, val := range v {
-				if i > 0 {
-					joined += ", "
-				}
-				joined += val
-			}
-			result[k] = joined
+		if len(v) > 0 {
+			result[k] = strings.Join(v, ", ")
 		}
 	}
 	return result
