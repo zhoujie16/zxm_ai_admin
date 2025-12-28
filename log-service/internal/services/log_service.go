@@ -4,6 +4,8 @@ package services
 
 import (
 	"errors"
+	"strconv"
+	"strings"
 	"time"
 	"zxm_ai_admin/log-service/internal/database"
 	"zxm_ai_admin/log-service/internal/models"
@@ -40,13 +42,13 @@ type CreateLogRequest struct {
 
 // ListLogsRequest 日志列表查询请求
 type ListLogsRequest struct {
-	Page         int    `form:"page"`
-	PageSize     int    `form:"page_size"`
-	RequestID    string `form:"request_id"`
-	StartTime    string `form:"start_time"`
-	EndTime      string `form:"end_time"`
-	Status       int    `form:"status"`
-	Method       string `form:"method"`
+	Page          int    `form:"page"`
+	PageSize      int    `form:"page_size"`
+	RequestID     string `form:"request_id"`
+	StartTime     string `form:"start_time"`
+	EndTime       string `form:"end_time"`
+	Status        string `form:"status"`
+	Method        string `form:"method"`
 	Authorization string `form:"authorization"`
 }
 
@@ -120,8 +122,18 @@ func (s *LogService) ListLogs(req *ListLogsRequest) (*ListLogsResponse, error) {
 		}
 	}
 
-	if req.Status > 0 {
-		query = query.Where("status = ?", req.Status)
+	// 解析状态码字符串（逗号分隔，支持单个或多个）
+	if req.Status != "" {
+		parts := strings.Split(req.Status, ",")
+		var statuses []int
+		for _, part := range parts {
+			if num, err := strconv.Atoi(strings.TrimSpace(part)); err == nil {
+				statuses = append(statuses, num)
+			}
+		}
+		if len(statuses) > 0 {
+			query = query.Where("status IN ?", statuses)
+		}
 	}
 
 	if req.Method != "" {

@@ -41,23 +41,19 @@ export default [
     icon: 'KeyOutlined',
     component: './token',
   },
-  // 日志管理菜单（一级）
+  // 请求日志（一级）
   {
-    path: '/log-management',
-    name: '日志管理',
+    path: '/token-usage-log',
+    name: '请求日志',
+    icon: 'HistoryOutlined',
+    component: './token-usage-log',
+  },
+  // 系统日志（一级）
+  {
+    path: '/system-log',
+    name: '系统日志',
     icon: 'FileTextOutlined',
-    routes: [
-      {
-        path: '/log-management/request-log',
-        name: '请求日志',
-        component: './token-usage-log',
-      },
-      {
-        path: '/log-management/system-log',
-        name: '系统日志',
-        component: './system-log',
-      },
-    ],
+    component: './system-log',
   },
 
   // 404页面

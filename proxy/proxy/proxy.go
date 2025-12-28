@@ -3,6 +3,7 @@ package proxy
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
@@ -55,8 +56,9 @@ func (p *Proxy) Handler() http.Handler {
 		// 执行代理
 		p.serveHTTP(wrapped, r)
 
-		// 记录日志
-		p.logRequest(ctx, r, wrapped, originalAuth, string(requestBody), start)
+		// 精简请求体后再记录日志
+		sanitizedBody := sanitizeRequestBody(string(requestBody))
+		p.logRequest(ctx, r, wrapped, originalAuth, sanitizedBody, start)
 	})
 }
 
@@ -244,4 +246,44 @@ func headersToMap(h http.Header) map[string]string {
 		}
 	}
 	return result
+}
+
+// sanitizeRequestBody 精简请求体，只保留必要的字段
+// 如果解析失败，返回原始请求体
+func sanitizeRequestBody(requestBody string) string {
+	var data map[string]any
+	if err := json.Unmarshal([]byte(requestBody), &data); err != nil {
+		return requestBody
+	}
+
+	sanitized := make(map[string]any)
+
+	// 需要保留的字段
+	fieldsToKeep := []string{"model", "stream", "thinking", "metadata", "max_tokens"}
+	for _, field := range fieldsToKeep {
+		if val, exists := data[field]; exists {
+			sanitized[field] = val
+		}
+	}
+
+	// 处理 messages：只保留第一条 role 为 "user" 的消息
+	if messagesVal, exists := data["messages"]; exists {
+		if messages, ok := messagesVal.([]any); ok {
+			for _, msg := range messages {
+				if msgMap, ok := msg.(map[string]any); ok {
+					if role, ok := msgMap["role"].(string); ok && role == "user" {
+						sanitized["messages"] = []any{msgMap}
+						break
+					}
+				}
+			}
+		}
+	}
+
+	// 序列化回 JSON
+	result, err := json.Marshal(sanitized)
+	if err != nil {
+		return requestBody
+	}
+	return string(result)
 }

@@ -68,8 +68,8 @@ export interface ITokenUsageLogListRequest {
   start_time?: string;
   /** 结束时间 */
   end_time?: string;
-  /** 按状态码过滤（-1 表示全部） */
-  status?: number;
+  /** 按状态码过滤（ProTable 传入 number，后端接收 string） */
+  status?: number | string;
   /** 按 HTTP 方法过滤 */
   method?: string;
   /** 按 Authorization 头模糊匹配 */

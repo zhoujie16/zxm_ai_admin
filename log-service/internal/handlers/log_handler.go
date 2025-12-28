@@ -103,7 +103,7 @@ func (h *LogHandler) CreateLog(c *gin.Context) {
 // @Param request_id query string false "按 request_id 查询"
 // @Param start_time query string false "开始时间"
 // @Param end_time query string false "结束时间"
-// @Param status query int false "状态码"
+// @Param status query string false "状态码（单个如 200 或多个逗号分隔如 200,401,404）"
 // @Param method query string false "HTTP 方法"
 // @Param authorization query string false "Authorization"
 // @Success 200 {object} services.ListLogsResponse
