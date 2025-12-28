@@ -5,7 +5,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,6 +14,7 @@ import (
 	"zxm_ai_admin/log-service/internal/config"
 	"zxm_ai_admin/log-service/internal/database"
 	"zxm_ai_admin/log-service/internal/handlers"
+	"zxm_ai_admin/log-service/internal/logger"
 	"zxm_ai_admin/log-service/internal/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -28,14 +28,26 @@ func main() {
 	}
 
 	if err := config.Load(configPath); err != nil {
-		log.Fatalf("加载配置失败: %v", err)
+		// 配置加载失败时使用标准库 log，因为 logger 还未初始化
+		fmt.Fprintf(os.Stderr, "加载配置失败: %v\n", err)
+		os.Exit(1)
 	}
 
 	cfg := config.GetConfig()
 
+	// 初始化日志
+	logLevel := config.ParseLogLevel(cfg.Log.Level)
+	logDir := cfg.Log.Dir
+
+	if err := logger.System.Init(logDir, logLevel); err != nil {
+		fmt.Fprintf(os.Stderr, "系统日志初始化失败: %v\n", err)
+		os.Exit(1)
+	}
+
 	// 初始化数据库
 	if err := database.Init(); err != nil {
-		log.Fatalf("初始化数据库失败: %v", err)
+		logger.Error("初始化数据库失败", "error", err)
+		os.Exit(1)
 	}
 	defer database.Close()
 
@@ -45,7 +57,7 @@ func main() {
 	// 创建Gin引擎
 	r := gin.New()
 	r.Use(gin.Recovery())
-	r.Use(gin.Logger())
+	r.Use(middleware.RequestLogger())
 	r.Use(middleware.CORSMiddleware())
 
 	// 注册路由
@@ -59,9 +71,10 @@ func main() {
 
 	// 启动服务器
 	go func() {
-		log.Printf("日志服务启动，端口: %d", cfg.Server.Port)
+		logger.Info("日志服务启动", "port", cfg.Server.Port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("服务器启动失败: %v", err)
+			logger.Error("服务器启动失败", "error", err)
+			os.Exit(1)
 		}
 	}()
 
@@ -70,16 +83,17 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Println("正在关闭服务器...")
+	logger.Info("正在关闭服务器...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatalf("服务器强制关闭: %v", err)
+		logger.Error("服务器强制关闭", "error", err)
+		os.Exit(1)
 	}
 
-	log.Println("服务器已关闭")
+	logger.Info("服务器已关闭")
 }
 
 // setupRoutes 设置路由

@@ -19,5 +19,5 @@ system_auth_token: "zxm-ai-admin-secret-key-change-in-production"
 
 log:
   level: info  # debug, info, warn, error
-  output: "./logs/app.log"
+  dir: "./logs"  # 日志目录，自动按半小时轮转文件
 

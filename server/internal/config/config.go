@@ -41,8 +41,8 @@ type JWTConfig struct {
 }
 
 type LogConfig struct {
-	Level  string `mapstructure:"level"`
-	Output string `mapstructure:"output"`
+	Level string `mapstructure:"level"`
+	Dir   string `mapstructure:"dir"`
 }
 
 var AppConfig *Config
@@ -71,12 +71,6 @@ func Load(configPath string) error {
 	dbDir := filepath.Dir(AppConfig.Database.Path)
 	if err := os.MkdirAll(dbDir, 0755); err != nil {
 		return fmt.Errorf("创建数据库目录失败: %w", err)
-	}
-
-	// 确保日志目录存在
-	logDir := filepath.Dir(AppConfig.Log.Output)
-	if err := os.MkdirAll(logDir, 0755); err != nil {
-		return fmt.Errorf("创建日志目录失败: %w", err)
 	}
 
 	return nil

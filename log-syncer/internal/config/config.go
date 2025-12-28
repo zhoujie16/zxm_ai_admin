@@ -21,6 +21,7 @@ type Config struct {
 	Proxy    ProxyConfig    `yaml:"proxy"`
 	Archive  ArchiveConfig  `yaml:"archive"`
 	Uploader UploaderConfig `yaml:"uploader"`
+	Log      LogConfig      `yaml:"log"`
 }
 
 // ServerConfig 服务器配置
@@ -44,6 +45,12 @@ type ArchiveConfig struct {
 // UploaderConfig 上传配置
 type UploaderConfig struct {
 	BatchSize int `yaml:"batch_size"`
+}
+
+// LogConfig 日志配置
+type LogConfig struct {
+	Level string `yaml:"level"` // debug, info, warn, error
+	Dir   string `yaml:"dir"`   // 日志目录
 }
 
 // Load 加载配置文件

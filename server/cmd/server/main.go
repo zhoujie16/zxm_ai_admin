@@ -5,7 +5,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,12 +15,11 @@ import (
 	"zxm_ai_admin/server/internal/config"
 	"zxm_ai_admin/server/internal/database"
 	"zxm_ai_admin/server/internal/handlers"
+	"zxm_ai_admin/server/internal/logger"
 	"zxm_ai_admin/server/internal/middleware"
 	"zxm_ai_admin/server/internal/utils"
 
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 func main() {
@@ -31,21 +30,27 @@ func main() {
 	}
 
 	if err := config.Load(configPath); err != nil {
-		log.Fatalf("加载配置失败: %v", err)
+		slog.Default().Error("加载配置失败", "error", err)
+		os.Exit(1)
 	}
 
 	cfg := config.GetConfig()
 
 	// 初始化日志
-	logger := initLogger(cfg.Log.Level, cfg.Log.Output)
-	defer logger.Sync()
+	logLevel := parseLogLevel(cfg.Log.Level)
+	logDir := cfg.Log.Dir
+	if err := logger.System.Init(logDir, logLevel); err != nil {
+		slog.Default().Error("系统日志初始化失败", "error", err)
+		os.Exit(1)
+	}
 
 	// 初始化JWT
 	utils.InitJWT()
 
 	// 初始化数据库
 	if err := database.Init(); err != nil {
-		logger.Fatal("初始化数据库失败", zap.Error(err))
+		logger.Error("初始化数据库失败", "error", err)
+		os.Exit(1)
 	}
 	defer database.Close()
 
@@ -56,8 +61,8 @@ func main() {
 	r := gin.New()
 
 	// 注册中间件
-	r.Use(middleware.RecoveryMiddleware(logger))
-	r.Use(middleware.LoggerMiddleware(logger))
+	r.Use(middleware.RecoveryMiddleware())
+	r.Use(middleware.RequestLogger())
 	r.Use(middleware.CORSMiddleware())
 
 	// 注册路由
@@ -71,9 +76,10 @@ func main() {
 
 	// 启动服务器（在goroutine中）
 	go func() {
-		logger.Info("服务器启动", zap.Int("port", cfg.Server.Port))
+		logger.Info("服务器启动", "port", cfg.Server.Port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Fatal("服务器启动失败", zap.Error(err))
+			logger.Error("服务器启动失败", "error", err)
+			os.Exit(1)
 		}
 	}()
 
@@ -89,41 +95,27 @@ func main() {
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		logger.Fatal("服务器强制关闭", zap.Error(err))
+		logger.Error("服务器强制关闭", "error", err)
+		os.Exit(1)
 	}
 
 	logger.Info("服务器已关闭")
 }
 
-// initLogger 初始化日志
-func initLogger(level, output string) *zap.Logger {
-	var zapLevel zapcore.Level
+// parseLogLevel 解析日志级别
+func parseLogLevel(level string) slog.Level {
 	switch level {
 	case "debug":
-		zapLevel = zapcore.DebugLevel
+		return slog.LevelDebug
 	case "info":
-		zapLevel = zapcore.InfoLevel
+		return slog.LevelInfo
 	case "warn":
-		zapLevel = zapcore.WarnLevel
+		return slog.LevelWarn
 	case "error":
-		zapLevel = zapcore.ErrorLevel
+		return slog.LevelError
 	default:
-		zapLevel = zapcore.InfoLevel
+		return slog.LevelInfo
 	}
-
-	config := zap.NewProductionConfig()
-	config.Level = zap.NewAtomicLevelAt(zapLevel)
-	config.OutputPaths = []string{output, "stdout"}
-	config.ErrorOutputPaths = []string{output, "stderr"}
-	config.EncoderConfig.TimeKey = "timestamp"
-	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-
-	logger, err := config.Build()
-	if err != nil {
-		log.Fatalf("初始化日志失败: %v", err)
-	}
-
-	return logger
 }
 
 // setupRoutes 设置路由

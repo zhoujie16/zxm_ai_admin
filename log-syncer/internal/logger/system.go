@@ -1,24 +1,26 @@
+// Package logger 日志记录模块
+// 提供结构化日志记录功能，支持按半小时轮转日志文件
 package logger
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 // System 系统日志记录器
 type SystemLogger struct {
-	logDir  string
-	level   slog.Level
-	mu      sync.Mutex
-	logger  *slog.Logger
+	logDir           string
+	level            slog.Level
+	mu               sync.Mutex
+	logger           *slog.Logger
 	currentTimestamp string
-	file    *os.File
+	file             *os.File
 }
 
 var system = &SystemLogger{}
@@ -58,7 +60,44 @@ func (s *SystemLogger) Init(logDir string, level slog.Level) error {
 		return err
 	}
 
+	// 清理超过保留期的旧日志文件
+	s.cleanOldLogs(7)
+
 	return s.rotate()
+}
+
+// cleanOldLogs 清理超过保留天数的旧日志文件（调用前必须已加锁）
+func (s *SystemLogger) cleanOldLogs(retentionDays int) {
+	entries, err := os.ReadDir(s.logDir)
+	if err != nil {
+		return
+	}
+
+	cutoffTime := time.Now().AddDate(0, 0, -retentionDays)
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		// 只处理 sync-*.log 文件
+		name := entry.Name()
+		if !strings.HasPrefix(name, "sync-") || !strings.HasSuffix(name, ".log") {
+			continue
+		}
+
+		// 获取文件修改时间
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+
+		// 如果文件修改时间早于保留截止时间，删除文件
+		if info.ModTime().Before(cutoffTime) {
+			filePath := filepath.Join(s.logDir, name)
+			os.Remove(filePath)
+		}
+	}
 }
 
 // rotate 切换日志文件（调用前必须已加锁）
@@ -70,13 +109,16 @@ func (s *SystemLogger) rotate() error {
 		return nil
 	}
 
+	// 切换文件时清理超过保留期的旧日志文件
+	s.cleanOldLogs(7)
+
 	// 关闭旧文件
 	if s.file != nil {
 		s.file.Close()
 	}
 
 	// 创建新文件
-	filename := filepath.Join(s.logDir, "system-"+currentTimestamp+".log")
+	filename := filepath.Join(s.logDir, "sync-"+currentTimestamp+".log")
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
 		return err
@@ -109,9 +151,7 @@ func (s *SystemLogger) Info(msg string, args ...any) {
 	}
 
 	s.rotate()
-	requestID := uuid.New().String()
-	newArgs := append([]any{"request_id", requestID}, args...)
-	s.logger.Info(msg, newArgs...)
+	s.logger.Info(msg, args...)
 }
 
 // Error 记录 error 级别日志
@@ -124,9 +164,7 @@ func (s *SystemLogger) Error(msg string, args ...any) {
 	}
 
 	s.rotate()
-	requestID := uuid.New().String()
-	newArgs := append([]any{"request_id", requestID}, args...)
-	s.logger.Error(msg, newArgs...)
+	s.logger.Error(msg, args...)
 }
 
 // Warn 记录 warn 级别日志
@@ -139,9 +177,33 @@ func (s *SystemLogger) Warn(msg string, args ...any) {
 	}
 
 	s.rotate()
-	requestID := uuid.New().String()
-	newArgs := append([]any{"request_id", requestID}, args...)
-	s.logger.Warn(msg, newArgs...)
+	s.logger.Warn(msg, args...)
+}
+
+// Debug 记录 debug 级别日志
+func (s *SystemLogger) Debug(msg string, args ...any) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.logger == nil {
+		return
+	}
+
+	s.rotate()
+	s.logger.Debug(msg, args...)
+}
+
+// Log 记录指定级别的日志（带 context）
+func (s *SystemLogger) Log(ctx context.Context, level slog.Level, msg string, args ...any) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.logger == nil {
+		return
+	}
+
+	s.rotate()
+	s.logger.Log(ctx, level, msg, args...)
 }
 
 // System 导出的系统日志实例

@@ -4,17 +4,17 @@ package database
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"time"
 
 	"zxm_ai_admin/log-service/internal/config"
+	"zxm_ai_admin/log-service/internal/logger"
 	"zxm_ai_admin/log-service/internal/models"
 
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	gormLogger "gorm.io/gorm/logger"
 )
 
 var DB *gorm.DB
@@ -34,7 +34,7 @@ func Init() error {
 
 	var err error
 	DB, err = gorm.Open(sqlite.Open(cfg.Database.Path), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: gormLogger.Default.LogMode(gormLogger.Info),
 	})
 
 	if err != nil {
@@ -56,7 +56,7 @@ func Init() error {
 		return fmt.Errorf("数据库迁移失败: %w", err)
 	}
 
-	log.Println("数据库连接成功")
+	logger.Info("数据库连接成功", "path", cfg.Database.Path)
 	return nil
 }
 

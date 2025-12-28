@@ -4,7 +4,9 @@ package config
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
+	"strings"
 	"sync"
 
 	"gopkg.in/yaml.v3"
@@ -14,6 +16,7 @@ import (
 type Config struct {
 	Server   ServerConfig   `yaml:"server"`
 	Database DatabaseConfig `yaml:"database"`
+	Log      LogConfig      `yaml:"log"`
 	API      APIConfig      `yaml:"api"`
 }
 
@@ -28,6 +31,12 @@ type DatabaseConfig struct {
 	Path          string `yaml:"path"`
 	MaxOpenConns  int    `yaml:"max_open_conns"`
 	MaxIdleConns  int    `yaml:"max_idle_conns"`
+}
+
+// LogConfig 日志配置
+type LogConfig struct {
+	Level string `yaml:"level"` // 日志级别：debug, info, warn, error
+	Dir   string `yaml:"dir"`   // 日志文件目录
 }
 
 // APIConfig API 配置
@@ -73,6 +82,12 @@ func Load(configPath string) error {
 		if cfg.Database.MaxIdleConns == 0 {
 			cfg.Database.MaxIdleConns = 5
 		}
+		if cfg.Log.Level == "" {
+			cfg.Log.Level = "info"
+		}
+		if cfg.Log.Dir == "" {
+			cfg.Log.Dir = "./logs"
+		}
 	})
 
 	return err
@@ -81,4 +96,20 @@ func Load(configPath string) error {
 // GetConfig 获取配置实例
 func GetConfig() *Config {
 	return cfg
+}
+
+// ParseLogLevel 解析日志级别
+func ParseLogLevel(level string) slog.Level {
+	switch strings.ToLower(level) {
+	case "debug":
+		return slog.LevelDebug
+	case "info":
+		return slog.LevelInfo
+	case "warn":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
 }

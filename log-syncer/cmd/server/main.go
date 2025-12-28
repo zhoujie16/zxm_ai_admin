@@ -2,13 +2,15 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
 	"zxm_ai_admin/log-syncer/internal/archiver"
 	"zxm_ai_admin/log-syncer/internal/config"
+	applogger "zxm_ai_admin/log-syncer/internal/logger"
 	"zxm_ai_admin/log-syncer/internal/parser"
 	"zxm_ai_admin/log-syncer/internal/scheduler"
 	"zxm_ai_admin/log-syncer/internal/scanner"
@@ -23,16 +25,26 @@ func main() {
 	}
 
 	if err := config.Load(configPath); err != nil {
-		log.Fatalf("加载配置失败: %v", err)
+		slog.Default().Error("加载配置失败", "error", err)
+		os.Exit(1)
 	}
 
 	cfg := config.GetConfig()
 
-	log.Println("日志同步服务启动")
-	log.Printf("日志目录: %s", cfg.Proxy.LogDir)
-	log.Printf("归档目录: %s", cfg.Archive.Dir)
-	log.Printf("归档保留: %d 天", cfg.Archive.RetentionDays)
-	log.Printf("Log Service: %s", cfg.Server.LogServiceURL)
+	// 初始化日志
+	logLevel := parseLogLevel(cfg.Log.Level)
+	logDir := cfg.Log.Dir
+	if err := applogger.System.Init(logDir, logLevel); err != nil {
+		slog.Default().Error("系统日志初始化失败", "error", err)
+		os.Exit(1)
+	}
+
+	applogger.Info("日志同步服务启动",
+		"log_dir", cfg.Proxy.LogDir,
+		"archive_dir", cfg.Archive.Dir,
+		"retention_days", cfg.Archive.RetentionDays,
+		"log_service_url", cfg.Server.LogServiceURL,
+	)
 
 	// 创建组件
 	logScanner := scanner.NewScanner(cfg.Proxy.LogDir)
@@ -49,7 +61,7 @@ func main() {
 	sched.Start()
 
 	// 启动时立即执行一次同步任务
-	log.Println("启动时执行同步任务")
+	applogger.Info("启动时执行同步任务")
 	runSyncTask(logScanner, logParser, upldr, arch)
 
 	// 等待退出信号
@@ -57,9 +69,9 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Println("正在关闭服务...")
+	applogger.Info("正在关闭服务...")
 	sched.Stop()
-	log.Println("服务已关闭")
+	applogger.Info("服务已关闭")
 }
 
 // runSyncTask 执行同步任务
@@ -69,7 +81,7 @@ func runSyncTask(
 	upldr *uploader.Uploader,
 	arch *archiver.Archiver,
 ) {
-	log.Println("===== 开始扫描日志文件 =====")
+	applogger.Info("===== 开始扫描日志文件 =====")
 
 	cfg := config.GetConfig()
 	cutoffTime := getCutoffTime()
@@ -77,14 +89,14 @@ func runSyncTask(
 	// 扫描日志文件
 	files, err := logScanner.Scan(cutoffTime)
 	if err != nil {
-		log.Printf("扫描日志文件失败: %v", err)
+		applogger.Error("扫描日志文件失败", "error", err)
 		return
 	}
 
 	if len(files) == 0 {
-		log.Println("没有需要上传的日志文件")
+		applogger.Info("没有需要上传的日志文件")
 	} else {
-		log.Printf("发现 %d 个日志文件", len(files))
+		applogger.Info("发现日志文件", "count", len(files))
 	}
 
 	// 按类型分类
@@ -99,27 +111,30 @@ func runSyncTask(
 		}
 	}
 
-	log.Printf("请求日志: %d 个, 系统日志: %d 个", len(requestFiles), len(systemFiles))
+	applogger.Info("日志分类完成",
+		"request_count", len(requestFiles),
+		"system_count", len(systemFiles),
+	)
 
 	// 处理请求日志
 	for _, file := range requestFiles {
 		if err := processLogFile(file, logParser, upldr, arch, cfg.Uploader.BatchSize, true); err != nil {
-			log.Printf("处理请求日志失败: %s, 错误: %v", file.Name, err)
+			applogger.Error("处理请求日志失败", "file", file.Name, "error", err)
 		}
 	}
 
 	// 处理系统日志
 	for _, file := range systemFiles {
 		if err := processLogFile(file, logParser, upldr, arch, cfg.Uploader.BatchSize, false); err != nil {
-			log.Printf("处理系统日志失败: %s, 错误: %v", file.Name, err)
+			applogger.Error("处理系统日志失败", "file", file.Name, "error", err)
 		}
 	}
 
-	log.Println("===== 扫描完成 =====")
+	applogger.Info("===== 扫描完成 =====")
 
 	// 清理过期归档
 	if err := arch.CleanExpired(); err != nil {
-		log.Printf("清理过期归档失败: %v", err)
+		applogger.Error("清理过期归档失败", "error", err)
 	}
 }
 
@@ -132,7 +147,7 @@ func processLogFile(
 	batchSize int,
 	isRequest bool,
 ) error {
-	log.Printf("处理文件: %s", file.Name)
+	applogger.Info("处理文件", "file", file.Name)
 
 	// 解析日志文件
 	logType := parser.LogTypeSystem
@@ -146,12 +161,12 @@ func processLogFile(
 	}
 
 	if len(entries) == 0 {
-		log.Printf("文件为空或无有效日志: %s", file.Name)
+		applogger.Info("文件为空或无有效日志", "file", file.Name)
 		// 空文件也归档
 		return arch.Archive(file.Path)
 	}
 
-	log.Printf("解析日志: %s (%d 条)", file.Name, len(entries))
+	applogger.Info("解析日志", "file", file.Name, "entries", len(entries))
 
 	// 分批上传
 	batches := p.Batch(entries, batchSize)
@@ -178,7 +193,11 @@ func processLogFile(
 		if result.Success {
 			successCount++
 		} else {
-			log.Printf("批次 %d/%d 上传失败: %v", i+1, len(batches), result.Error)
+			applogger.Error("批次上传失败",
+				"batch", i+1,
+				"total", len(batches),
+				"error", result.Error,
+			)
 			return result.Error // 失败不重试，直接返回
 		}
 	}
@@ -194,4 +213,20 @@ func processLogFile(
 // getCutoffTime 获取截止时间（当前时间）
 func getCutoffTime() time.Time {
 	return time.Now()
+}
+
+// parseLogLevel 解析日志级别
+func parseLogLevel(level string) slog.Level {
+	switch level {
+	case "debug":
+		return slog.LevelDebug
+	case "info":
+		return slog.LevelInfo
+	case "warn":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
 }
