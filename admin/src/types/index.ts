@@ -92,9 +92,7 @@ export interface IAIModel {
 export interface IAIModelFormData {
   /** 模型名称 */
   model_name?: string;
-  /** API地址 */
-  api_url?: string;
-  /** API Key */
+  /** 模型来源的 API Key（用于后端查询模型来源） */
   api_key?: string;
   /** 状态：1=启用，0=禁用 */
   status?: number;
@@ -146,6 +144,52 @@ export interface ITokenFormData {
   expire_at?: string;
   /** 使用限额 */
   usage_limit?: number;
+  /** 备注 */
+  remark?: string;
+}
+
+// ==================== 模型来源相关类型 ====================
+
+/**
+ * 模型来源数据类型
+ */
+export interface IModelSource {
+  /** 模型来源ID */
+  id: number;
+  /** 模型名称 */
+  model_name: string;
+  /** API地址 */
+  api_url: string;
+  /** API Key */
+  api_key: string;
+  /** 备注 */
+  remark?: string;
+  /** 创建时间 */
+  created_at: string;
+  /** 更新时间 */
+  updated_at: string;
+}
+
+/**
+ * 创建模型来源表单数据
+ */
+export interface ICreateModelSourceFormData {
+  /** 模型名称 */
+  model_name: string;
+  /** API地址 */
+  api_url: string;
+  /** API Key */
+  api_key: string;
+  /** 备注 */
+  remark?: string;
+}
+
+/**
+ * 更新模型来源表单数据
+ */
+export interface IUpdateModelSourceFormData {
+  /** 模型名称 */
+  model_name?: string;
   /** 备注 */
   remark?: string;
 }

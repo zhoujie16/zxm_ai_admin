@@ -177,6 +177,18 @@ func setupRoutes(r *gin.Engine) {
 		// Token 与模型关联接口（proxy 使用系统认证令牌调用）
 		api.GET("/tokens/with-model", middleware.SystemAuthMiddleware(), tokenHandler.ListAllTokensWithModel)
 
+		// 模型来源相关（需要认证）
+		modelSourceHandler := handlers.NewModelSourceHandler()
+		modelSources := api.Group("/model-sources")
+		modelSources.Use(middleware.AuthMiddleware())
+		{
+			modelSources.POST("", modelSourceHandler.CreateModelSource)
+			modelSources.GET("", modelSourceHandler.ListModelSources)
+			modelSources.GET("/:id", modelSourceHandler.GetModelSource)
+			modelSources.PUT("/:id", modelSourceHandler.UpdateModelSource)
+			modelSources.DELETE("/:id", modelSourceHandler.DeleteModelSource)
+		}
+
 	}
 }
 

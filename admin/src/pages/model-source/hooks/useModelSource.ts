@@ -1,67 +1,49 @@
 /**
- * 模型代理数据管理 Hook
- * 功能：管理模型代理的列表、创建、更新、删除等数据逻辑
+ * 模型来源数据管理 Hook
  */
 import { useState, useCallback } from 'react';
 import { message } from 'antd';
 import {
-  getAIModelList,
-  createAIModel,
-  updateAIModel,
-  deleteAIModel,
-} from '@/services/aiModel';
-import type { IAIModel, IAIModelFormData } from '@/types';
+  getModelSourceList,
+  createModelSource,
+  updateModelSource,
+  deleteModelSource,
+} from '@/services/modelSource';
+import type {
+  IModelSource,
+  ICreateModelSourceFormData,
+  IUpdateModelSourceFormData,
+} from '@/types';
 
-/**
- * 分页信息类型
- */
 export interface IPaginationInfo {
   current: number;
   pageSize: number;
 }
 
-/**
- * 列表数据响应类型
- */
-export interface IUseAIModelReturn {
-  /** 数据列表 */
-  dataSource: IAIModel[];
-  /** 总数 */
+export interface IUseModelSourceReturn {
+  dataSource: IModelSource[];
   total: number;
-  /** 加载状态 */
   loading: boolean;
-  /** 分页信息 */
   pagination: IPaginationInfo;
-  /** 加载数据 */
   loadData: (page?: number, pageSize?: number) => Promise<void>;
-  /** 创建模型代理 */
-  handleCreate: (data: IAIModelFormData) => Promise<boolean>;
-  /** 更新模型代理 */
-  handleUpdate: (id: number, data: IAIModelFormData) => Promise<boolean>;
-  /** 删除模型代理 */
+  handleCreate: (data: ICreateModelSourceFormData) => Promise<boolean>;
+  handleUpdate: (id: number, data: IUpdateModelSourceFormData) => Promise<boolean>;
   handleDelete: (id: number) => Promise<boolean>;
 }
 
-/**
- * 模型代理数据管理 Hook
- * @returns 数据和方法
- */
-export function useAIModel(): IUseAIModelReturn {
+export function useModelSource(): IUseModelSourceReturn {
   const [loading, setLoading] = useState(false);
-  const [dataSource, setDataSource] = useState<IAIModel[]>([]);
+  const [dataSource, setDataSource] = useState<IModelSource[]>([]);
   const [total, setTotal] = useState(0);
   const [pagination, setPagination] = useState<IPaginationInfo>({
     current: 1,
     pageSize: 10,
   });
 
-  /**
-   * 加载列表数据
-   */
   const loadData = useCallback(async (page: number = 1, pageSize: number = 10) => {
     setLoading(true);
     try {
-      const result = await getAIModelList(page, pageSize);
+      const result = await getModelSourceList(page, pageSize);
       if (result.success && result.data) {
         setDataSource(result.data.list);
         setTotal(result.data.total);
@@ -77,31 +59,28 @@ export function useAIModel(): IUseAIModelReturn {
     }
   }, []);
 
-  /**
-   * 创建模型代理
-   */
-  const handleCreate = useCallback(async (data: IAIModelFormData): Promise<boolean> => {
-    try {
-      const result = await createAIModel(data);
-      if (result.success) {
-        message.success('创建成功');
-        await loadData(pagination.current, pagination.pageSize);
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('创建失败:', error);
-      return false;
-    }
-  }, [loadData, pagination]);
-
-  /**
-   * 更新模型代理
-   */
-  const handleUpdate = useCallback(
-    async (id: number, data: IAIModelFormData): Promise<boolean> => {
+  const handleCreate = useCallback(
+    async (data: ICreateModelSourceFormData): Promise<boolean> => {
       try {
-        const result = await updateAIModel(id, data);
+        const result = await createModelSource(data);
+        if (result.success) {
+          message.success('创建成功');
+          await loadData(pagination.current, pagination.pageSize);
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error('创建失败:', error);
+        return false;
+      }
+    },
+    [loadData, pagination],
+  );
+
+  const handleUpdate = useCallback(
+    async (id: number, data: IUpdateModelSourceFormData): Promise<boolean> => {
+      try {
+        const result = await updateModelSource(id, data);
         if (result.success) {
           message.success('更新成功');
           await loadData(pagination.current, pagination.pageSize);
@@ -116,16 +95,12 @@ export function useAIModel(): IUseAIModelReturn {
     [loadData, pagination],
   );
 
-  /**
-   * 删除模型代理
-   */
   const handleDelete = useCallback(
     async (id: number): Promise<boolean> => {
       try {
-        const result = await deleteAIModel(id);
+        const result = await deleteModelSource(id);
         if (result.success) {
           message.success('删除成功');
-          // 如果当前页没有数据了，回到上一页
           const newTotal = total - 1;
           const newPage =
             pagination.current > 1 &&

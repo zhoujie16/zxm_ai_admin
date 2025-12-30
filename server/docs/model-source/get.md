@@ -1,8 +1,8 @@
-# 获取模型代理详情接口
+# 模型来源详情接口
 
 ## 接口信息
 
-- **路径**: `/api/ai-models/:id`
+- **路径**: `/api/model-sources/:id`
 - **方法**: `GET`
 - **认证**: 需要Bearer Token
 
@@ -16,12 +16,12 @@ Authorization: Bearer <token>
 
 | 参数名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
-| id | int | 是 | 模型代理ID |
+| id | int | 是 | 模型来源ID |
 
 ## 请求示例
 
 ```
-GET /api/ai-models/1
+GET /api/model-sources/1
 ```
 
 ## 响应格式
@@ -37,39 +37,29 @@ GET /api/ai-models/1
     "model_name": "GPT-4",
     "api_url": "https://api.openai.com/v1",
     "api_key": "sk-xxxxxxx",
-    "status": 1,
-    "remark": "OpenAI GPT-4 模型代理",
-    "created_at": "2024-12-26T00:00:00Z",
-    "updated_at": "2024-12-26T00:00:00Z"
+    "remark": "OpenAI GPT-4 模型",
+    "created_at": "2024-12-30T00:00:00Z",
+    "updated_at": "2024-12-30T00:00:00Z"
   }
 }
 ```
 
 ### 错误响应
 
-#### 未认证 (401)
+#### 无效的ID (400)
 
 ```json
 {
-  "code": 401,
-  "message": "未提供认证token"
+  "code": 400,
+  "message": "无效的ID"
 }
 ```
 
-#### 模型代理不存在 (404)
+#### 不存在 (404)
 
 ```json
 {
   "code": 404,
-  "message": "模型代理不存在"
-}
-```
-
-#### 服务器错误 (500)
-
-```json
-{
-  "code": 500,
-  "message": "查询模型代理详情失败"
+  "message": "模型来源不存在"
 }
 ```

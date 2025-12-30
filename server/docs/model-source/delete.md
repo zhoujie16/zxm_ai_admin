@@ -1,8 +1,8 @@
-# 删除模型代理接口
+# 删除模型来源接口
 
 ## 接口信息
 
-- **路径**: `/api/ai-models/:id`
+- **路径**: `/api/model-sources/:id`
 - **方法**: `DELETE`
 - **认证**: 需要Bearer Token
 
@@ -16,12 +16,12 @@ Authorization: Bearer <token>
 
 | 参数名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
-| id | int | 是 | 模型代理ID |
+| id | int | 是 | 模型来源ID |
 
 ## 请求示例
 
 ```
-DELETE /api/ai-models/1
+DELETE /api/model-sources/1
 ```
 
 ## 响应格式
@@ -38,29 +38,20 @@ DELETE /api/ai-models/1
 
 ### 错误响应
 
-#### 未认证 (401)
+#### 无效的ID (400)
 
 ```json
 {
-  "code": 401,
-  "message": "未提供认证token"
+  "code": 400,
+  "message": "无效的ID"
 }
 ```
 
-#### 模型代理不存在 (404)
+#### 不存在 (400)
 
 ```json
 {
-  "code": 404,
-  "message": "模型代理不存在"
-}
-```
-
-#### 服务器错误 (500)
-
-```json
-{
-  "code": 500,
-  "message": "删除模型代理失败"
+  "code": 400,
+  "message": "模型来源不存在"
 }
 ```

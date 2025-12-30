@@ -1,20 +1,16 @@
 /**
- * 模型代理管理页面
- * 功能：模型代理的增删改查
+ * 模型来源管理页面
  */
-import { Button, Card } from 'antd';
+import { Button, Card, Space } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import React, { useEffect, useState } from 'react';
-import { useAIModel } from './hooks/useAIModel';
-import AIModelTable from './components/AIModelTable';
-import AIModelForm from './components/AIModelForm';
-import type { IAIModel, IAIModelFormData } from '@/types';
+import { useModelSource } from './hooks/useModelSource';
+import ModelSourceTable from './components/ModelSourceTable';
+import ModelSourceForm from './components/ModelSourceForm';
+import type { IModelSource } from '@/types';
 import './index.less';
 
-/**
- * 模型代理管理页面组件
- */
-const AIModelPage: React.FC = () => {
+const ModelSourcePage: React.FC = () => {
   const {
     dataSource,
     total,
@@ -24,47 +20,32 @@ const AIModelPage: React.FC = () => {
     handleCreate,
     handleUpdate,
     handleDelete,
-  } = useAIModel();
+  } = useModelSource();
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [editingRecord, setEditingRecord] = useState<IAIModel | null>(null);
+  const [editingRecord, setEditingRecord] = useState<IModelSource | null>(null);
 
-  /**
-   * 初始化加载数据
-   */
   useEffect(() => {
     loadData(1, 10);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /**
-   * 打开创建弹窗
-   */
   const handleOpenCreateModal = () => {
     setEditingRecord(null);
     setModalVisible(true);
   };
 
-  /**
-   * 打开编辑弹窗
-   */
-  const handleOpenEditModal = (record: IAIModel) => {
+  const handleOpenEditModal = (record: IModelSource) => {
     setEditingRecord(record);
     setModalVisible(true);
   };
 
-  /**
-   * 关闭弹窗
-   */
   const handleCloseModal = () => {
     setModalVisible(false);
     setEditingRecord(null);
   };
 
-  /**
-   * 处理表单提交
-   */
-  const handleFormSubmit = async (data: IAIModelFormData) => {
+  const handleFormSubmit = async (data: any) => {
     if (editingRecord) {
       await handleUpdate(editingRecord.id, data);
     } else {
@@ -73,23 +54,23 @@ const AIModelPage: React.FC = () => {
     handleCloseModal();
   };
 
-  /**
-   * 处理表格分页变化
-   */
   const handleTablePageChange = (page: number, pageSize: number) => {
     loadData(page, pageSize);
   };
 
   return (
-    <div className="ai-model-page">
+    <div className="model-source-page">
       <Card>
-        <div className="ai-model-page__header">
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal}>
-            新建模型代理
-          </Button>
+        <div className="model-source-page__header">
+          <h3>模型来源管理</h3>
+          <Space>
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal}>
+              新建模型来源
+            </Button>
+          </Space>
         </div>
 
-        <AIModelTable
+        <ModelSourceTable
           dataSource={dataSource}
           loading={loading}
           pagination={{
@@ -102,7 +83,7 @@ const AIModelPage: React.FC = () => {
           onDelete={handleDelete}
         />
 
-        <AIModelForm
+        <ModelSourceForm
           visible={modalVisible}
           editingRecord={editingRecord}
           onSubmit={handleFormSubmit}
@@ -113,4 +94,4 @@ const AIModelPage: React.FC = () => {
   );
 };
 
-export default AIModelPage;
+export default ModelSourcePage;

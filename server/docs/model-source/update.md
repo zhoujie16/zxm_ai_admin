@@ -1,8 +1,8 @@
-# 更新模型代理接口
+# 更新模型来源接口
 
 ## 接口信息
 
-- **路径**: `/api/ai-models/:id`
+- **路径**: `/api/model-sources/:id`
 - **方法**: `PUT`
 - **认证**: 需要Bearer Token
 
@@ -17,26 +17,22 @@ Content-Type: application/json
 
 | 参数名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
-| id | int | 是 | 模型代理ID |
+| id | int | 是 | 模型来源ID |
 
 ## 请求参数
 
 | 参数名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
 | model_name | string | 否 | 模型名称，最大长度100 |
-| api_key | string | 否 | 模型来源的 API Key（如需更换API信息，会从来源表重新获取） |
-| status | int | 否 | 状态：1=启用，0=禁用 |
 | remark | string | 否 | 备注，最大长度500 |
 
-> **说明**：如果提供 `api_key`，会从模型来源表重新查询对应的 `api_url` 并更新。
+**注意**: `api_url` 和 `api_key` 创建后不可修改
 
 ## 请求示例
 
 ```json
 {
   "model_name": "GPT-4 Turbo",
-  "api_key": "sk-newkeyxxxxxxxxxxxx",
-  "status": 1,
   "remark": "更新后的备注"
 }
 ```
@@ -53,49 +49,30 @@ Content-Type: application/json
     "id": 1,
     "model_name": "GPT-4 Turbo",
     "api_url": "https://api.openai.com/v1",
-    "api_key": "sk-new-key",
-    "status": 1,
+    "api_key": "sk-xxxxxxx",
     "remark": "更新后的备注",
     "created_at": "2024-12-30T00:00:00Z",
-    "updated_at": "2024-12-30T02:00:00Z"
+    "updated_at": "2024-12-30T01:00:00Z"
   }
 }
 ```
 
 ### 错误响应
 
-#### 未认证 (401)
+#### 无效的ID (400)
 
 ```json
 {
-  "code": 401,
-  "message": "未提供认证token"
+  "code": 400,
+  "message": "无效的ID"
 }
 ```
 
-#### 模型代理不存在 (404)
+#### 不存在 (404)
 
 ```json
 {
   "code": 404,
-  "message": "模型代理不存在"
-}
-```
-
-#### 模型来源不存在 (400)
-
-```json
-{
-  "code": 400,
   "message": "模型来源不存在"
-}
-```
-
-#### 参数错误 (400)
-
-```json
-{
-  "code": 400,
-  "message": "参数错误: 无效的参数"
 }
 ```

@@ -1,40 +1,27 @@
 /**
- * Token 表格组件
- * 功能：展示 Token 列表
+ * 模型来源表格组件
  */
-import { Button, Popconfirm, Space, Table, Tag, Typography } from 'antd';
+import { Button, Popconfirm, Space, Table, Typography } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import React, { useMemo } from 'react';
-import type { IToken } from '@/types';
+import type { IModelSource } from '@/types';
 
 const { Text } = Typography;
 
-/**
- * 表格组件 Props
- */
-export interface ITokenTableProps {
-  /** 数据源 */
-  dataSource: IToken[];
-  /** 加载状态 */
+export interface IModelSourceTableProps {
+  dataSource: IModelSource[];
   loading: boolean;
-  /** 分页信息 */
   pagination: {
     current: number;
     pageSize: number;
     total: number;
   };
-  /** 分页变化回调 */
   onPageChange: (page: number, pageSize: number) => void;
-  /** 编辑回调 */
-  onEdit: (record: IToken) => void;
-  /** 删除回调 */
+  onEdit: (record: IModelSource) => void;
   onDelete: (id: number) => void;
 }
 
-/**
- * 格式化时间
- */
 const formatDateTime = (text: string | undefined): string => {
   if (!text) return '-';
   try {
@@ -44,10 +31,7 @@ const formatDateTime = (text: string | undefined): string => {
   }
 };
 
-/**
- * Token 表格组件
- */
-const TokenTable: React.FC<ITokenTableProps> = ({
+const ModelSourceTable: React.FC<IModelSourceTableProps> = ({
   dataSource,
   loading,
   pagination,
@@ -55,15 +39,30 @@ const TokenTable: React.FC<ITokenTableProps> = ({
   onEdit,
   onDelete,
 }) => {
-  /**
-   * 表格列定义
-   */
-  const columns: ColumnsType<IToken> = useMemo(
+  const columns: ColumnsType<IModelSource> = useMemo(
     () => [
       {
-        title: 'Token',
-        dataIndex: 'token',
-        key: 'token',
+        title: '模型名称',
+        dataIndex: 'model_name',
+        key: 'model_name',
+        width: 150,
+      },
+      {
+        title: 'API地址',
+        dataIndex: 'api_url',
+        key: 'api_url',
+        width: 300,
+        ellipsis: true,
+        render: (text: string) => (
+          <Text ellipsis style={{ maxWidth: 280 }}>
+            {text}
+          </Text>
+        ),
+      },
+      {
+        title: 'API Key',
+        dataIndex: 'api_key',
+        key: 'api_key',
         width: 280,
         render: (text: string) => (
           <Text code copyable style={{ fontSize: 12 }}>
@@ -75,49 +74,7 @@ const TokenTable: React.FC<ITokenTableProps> = ({
         title: '备注',
         dataIndex: 'remark',
         key: 'remark',
-        width: 150,
         ellipsis: true,
-      },
-      {
-        title: '关联模型',
-        dataIndex: 'model_name',
-        key: 'model_name',
-        width: 150,
-        ellipsis: true,
-        render: (text: string) => text || '-',
-      },
-      {
-        title: '关联订单号',
-        dataIndex: 'order_no',
-        key: 'order_no',
-        width: 130,
-        ellipsis: true,
-        render: (text: string) => text || '-',
-      },
-      {
-        title: '状态',
-        dataIndex: 'status',
-        key: 'status',
-        width: 90,
-        render: (status: number) => (
-          <Tag color={status === 1 ? 'success' : 'default'}>
-            {status === 1 ? '启用' : '禁用'}
-          </Tag>
-        ),
-      },
-      {
-        title: '使用限额',
-        dataIndex: 'usage_limit',
-        key: 'usage_limit',
-        width: 100,
-        render: (limit: number) => (limit === 0 ? <Tag color="default">无限制</Tag> : limit),
-      },
-      {
-        title: '过期时间',
-        dataIndex: 'expire_at',
-        key: 'expire_at',
-        width: 170,
-        render: formatDateTime,
       },
       {
         title: '创建时间',
@@ -131,7 +88,7 @@ const TokenTable: React.FC<ITokenTableProps> = ({
         key: 'action',
         width: 150,
         fixed: 'right',
-        render: (_: unknown, record: IToken) => (
+        render: (_: unknown, record: IModelSource) => (
           <Space size="small">
             <Button
               type="link"
@@ -173,9 +130,9 @@ const TokenTable: React.FC<ITokenTableProps> = ({
         onChange: onPageChange,
         onShowSizeChange: onPageChange,
       }}
-      scroll={{ x: 1500 }}
+      scroll={{ x: 1200 }}
     />
   );
 };
 
-export default TokenTable;
+export default ModelSourceTable;

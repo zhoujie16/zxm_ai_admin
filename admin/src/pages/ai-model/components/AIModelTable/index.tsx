@@ -1,12 +1,14 @@
 /**
- * AI 模型表格组件
- * 功能：展示 AI 模型列表
+ * 模型代理表格组件
+ * 功能：展示模型代理列表
  */
-import { Button, Popconfirm, Space, Table, Tag } from 'antd';
+import { Button, Popconfirm, Space, Table, Tag, Typography } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import React, { useMemo } from 'react';
 import type { IAIModel } from '@/types';
+
+const { Text } = Typography;
 
 /**
  * 表格组件 Props
@@ -42,7 +44,7 @@ const formatDateTime = (text: string): string => {
 };
 
 /**
- * AI 模型表格组件
+ * 模型代理表格组件
  */
 const AIModelTable: React.FC<IAIModelTableProps> = ({
   dataSource,
@@ -75,13 +77,22 @@ const AIModelTable: React.FC<IAIModelTableProps> = ({
         key: 'api_url',
         width: 300,
         ellipsis: true,
+        render: (text: string) => (
+          <Text ellipsis style={{ maxWidth: 280 }}>
+            {text}
+          </Text>
+        ),
       },
       {
         title: 'API Key',
         dataIndex: 'api_key',
         key: 'api_key',
         width: 200,
-        ellipsis: true,
+        render: (text: string) => (
+          <Text code copyable style={{ fontSize: 12 }}>
+            {text}
+          </Text>
+        ),
       },
       {
         title: '状态',
@@ -104,14 +115,7 @@ const AIModelTable: React.FC<IAIModelTableProps> = ({
         title: '创建时间',
         dataIndex: 'created_at',
         key: 'created_at',
-        width: 180,
-        render: formatDateTime,
-      },
-      {
-        title: '更新时间',
-        dataIndex: 'updated_at',
-        key: 'updated_at',
-        width: 180,
+        width: 170,
         render: formatDateTime,
       },
       {

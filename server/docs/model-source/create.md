@@ -1,8 +1,8 @@
-# 创建模型代理接口
+# 创建模型来源接口
 
 ## 接口信息
 
-- **路径**: `/api/ai-models`
+- **路径**: `/api/model-sources`
 - **方法**: `POST`
 - **认证**: 需要Bearer Token
 
@@ -18,20 +18,18 @@ Content-Type: application/json
 | 参数名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
 | model_name | string | 是 | 模型名称，最大长度100 |
-| api_key | string | 是 | 模型来源的 API Key（用于查询模型来源，获取 api_url） |
-| status | int | 否 | 状态：1=启用，0=禁用，默认为1 |
+| api_url | string | 是 | API地址，最大长度500 |
+| api_key | string | 是 | API Key，最大长度255，唯一 |
 | remark | string | 否 | 备注，最大长度500 |
-
-> **说明**：`api_key` 用于从模型来源表查询对应的 `api_url`，查询到的 `api_url` 和 `api_key` 会写入模型代理记录。
 
 ## 请求示例
 
 ```json
 {
   "model_name": "GPT-4",
-  "api_key": "sk-xxxxxxxxxxxxxxxx",
-  "status": 1,
-  "remark": "OpenAI GPT-4 模型代理"
+  "api_url": "https://api.openai.com/v1",
+  "api_key": "sk-xxxxxxx",
+  "remark": "OpenAI GPT-4 模型"
 }
 ```
 
@@ -48,8 +46,7 @@ Content-Type: application/json
     "model_name": "GPT-4",
     "api_url": "https://api.openai.com/v1",
     "api_key": "sk-xxxxxxx",
-    "status": 1,
-    "remark": "OpenAI GPT-4 模型代理",
+    "remark": "OpenAI GPT-4 模型",
     "created_at": "2024-12-30T00:00:00Z",
     "updated_at": "2024-12-30T00:00:00Z"
   }
@@ -67,12 +64,12 @@ Content-Type: application/json
 }
 ```
 
-#### 模型来源不存在 (400)
+#### API Key已存在 (400)
 
 ```json
 {
   "code": 400,
-  "message": "模型来源不存在"
+  "message": "API Key 已存在"
 }
 ```
 

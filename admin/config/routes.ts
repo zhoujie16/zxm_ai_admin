@@ -31,9 +31,15 @@ export default [
   },
   {
     path: '/ai-model',
-    name: '模型管理',
+    name: '模型代理管理',
     icon: 'RobotOutlined',
     component: './ai-model',
+  },
+  {
+    path: '/model-source',
+    name: '模型来源管理',
+    icon: 'ApiOutlined',
+    component: './model-source',
   },
   {
     path: '/token',
