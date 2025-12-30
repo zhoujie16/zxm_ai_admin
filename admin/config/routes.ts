@@ -54,6 +54,13 @@ export default [
     icon: 'HistoryOutlined',
     component: './token-usage-log',
   },
+  // Token 排行榜（一级）
+  {
+    path: '/token-ranking',
+    name: 'Token 排行榜',
+    icon: 'TrophyOutlined',
+    component: './token-ranking',
+  },
   // 系统日志（一级）
   {
     path: '/system-log',

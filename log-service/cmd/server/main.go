@@ -107,6 +107,7 @@ func setupRoutes(r *gin.Engine) {
 	})
 
 	logHandler := handlers.NewLogHandler()
+	statisticsHandler := handlers.NewStatisticsHandler()
 
 	// API路由组
 	api := r.Group("/api")
@@ -119,6 +120,9 @@ func setupRoutes(r *gin.Engine) {
 		// 查询日志（使用 JWT 认证）
 		api.GET("/request-logs", middleware.AuthMiddleware(), logHandler.ListLogs)
 		api.GET("/request-logs/:id", middleware.AuthMiddleware(), logHandler.GetLog)
+		// 统计数据（使用 JWT 认证）
+		api.GET("/request-logs/statistics", middleware.AuthMiddleware(), statisticsHandler.GetUserStatistics)
+		api.GET("/request-logs/ranking", middleware.AuthMiddleware(), statisticsHandler.GetAuthorizationRanking)
 
 		// 系统日志查询（使用 JWT 认证）
 		api.GET("/system-logs", middleware.AuthMiddleware(), logHandler.ListSystemLogs)

@@ -162,7 +162,7 @@ func (s *TokenService) ListTokens(req *ListTokensRequest) (*ListTokensResponse, 
 	}
 
 	// 查询总数
-	if err := database.DB.Model(&models.Token{}).Count(&total).Error; err != nil {
+	if err := query.Count(&total).Error; err != nil {
 		return nil, errors.New("查询 Token 列表失败")
 	}
 
@@ -197,7 +197,7 @@ func (s *TokenService) ListAllTokensWithModel() ([]TokenWithFullModel, error) {
 			m.status as ai_model_status`).
 		Joins("INNER JOIN ai_models m ON t.ai_model_id = m.id").
 		Where("t.deleted_at IS NULL").
-		Where("(t.expire_at IS NULL OR t.expire_at > ?)", time.Now()).
+		Where("(t.expire_at IS NULL OR t.expire_at > ?)", time.Now().UTC()).
 		Order("t.created_at DESC").
 		Scan(&list).Error; err != nil {
 		return nil, errors.New("查询 Token 列表失败")
