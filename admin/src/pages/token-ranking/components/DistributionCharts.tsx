@@ -1,17 +1,9 @@
 /**
- * 分布图表组件
+ * 分布表格组件
  */
 import React from 'react';
-import { Card, Row, Col, Typography } from 'antd';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-} from 'recharts';
+import { Card, Row, Col, Typography, Table } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { formatNumber } from '../utils';
 
 const { Text } = Typography;
@@ -28,8 +20,6 @@ export interface IDistributionChartsProps {
   byPath: Array<{ path: string; count: number }>;
 }
 
-const COLORS = ['#1890ff', '#52c41a', '#faad14', '#f5222d', '#722ed1', '#fa8c16', '#13c2c2', '#eb2f96'];
-
 // 统一卡片样式
 const cardStyle: React.CSSProperties = {
   borderRadius: 8,
@@ -43,42 +33,53 @@ const emptyStyle: React.CSSProperties = {
   color: '#999',
 };
 
+type DistributionDataType = {
+  key: number;
+  name: string;
+  count: number;
+};
+
 const DistributionCharts: React.FC<IDistributionChartsProps> = ({ byIp, byPath }) => {
   // 确保数组不为 null
   const safeByIp = byIp ?? [];
   const safeByPath = byPath ?? [];
 
-  // 转换数据格式，限制显示前10条
-  const ipData = safeByIp.slice(0, 10).map((item) => ({
-    name: item.ip || '-',
-    count: item.count,
-  }));
+  // 转换数据格式，按count降序排列，限制显示前10条
+  const ipData: DistributionDataType[] = safeByIp
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10)
+    .map((item, index) => ({
+      key: index,
+      name: item.ip || '-',
+      count: item.count,
+    }));
 
-  const pathData = safeByPath.slice(0, 10).map((item) => ({
-    name: item.path || '-',
-    count: item.count,
-  }));
+  const pathData: DistributionDataType[] = safeByPath
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10)
+    .map((item, index) => ({
+      key: index,
+      name: item.path || '-',
+      count: item.count,
+    }));
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div
-          style={{
-            backgroundColor: 'rgba(0, 0, 0, 0.85)',
-            color: '#fff',
-            padding: '10px 14px',
-            borderRadius: '6px',
-            fontSize: '12px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-          }}
-        >
-          <p style={{ margin: '0 0 4px 0', fontWeight: 500 }}>{payload[0].payload.name}</p>
-          <p style={{ margin: 0 }}>请求次数: {formatNumber(payload[0].value)}</p>
-        </div>
-      );
-    }
-    return null;
-  };
+  const columns: ColumnsType<DistributionDataType> = [
+    {
+      title: '名称',
+      dataIndex: 'name',
+      key: 'name',
+      width: '70%',
+      ellipsis: true,
+    },
+    {
+      title: '请求次数',
+      dataIndex: 'count',
+      key: 'count',
+      width: '30%',
+      render: (value: number) => formatNumber(value),
+      align: 'right' as const,
+    },
+  ];
 
   const renderEmpty = () => (
     <div style={emptyStyle}>
@@ -95,18 +96,13 @@ const DistributionCharts: React.FC<IDistributionChartsProps> = ({ byIp, byPath }
           style={cardStyle}
         >
           {ipData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={ipData} layout="vertical" margin={{ left: 10, right: 10 }}>
-                <XAxis type="number" tick={{ fontSize: 12 }} stroke="#999" />
-                <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} stroke="#999" />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={20}>
-                  {ipData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <Table
+              dataSource={ipData}
+              columns={columns}
+              pagination={false}
+              size="small"
+              bordered={false}
+            />
           ) : (
             renderEmpty()
           )}
@@ -119,18 +115,13 @@ const DistributionCharts: React.FC<IDistributionChartsProps> = ({ byIp, byPath }
           style={cardStyle}
         >
           {pathData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={pathData} layout="vertical" margin={{ left: 10, right: 10 }}>
-                <XAxis type="number" tick={{ fontSize: 12 }} stroke="#999" />
-                <YAxis dataKey="name" type="category" width={120} tick={{ fontSize: 12 }} stroke="#999" />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={20}>
-                  {pathData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <Table
+              dataSource={pathData}
+              columns={columns}
+              pagination={false}
+              size="small"
+              bordered={false}
+            />
           ) : (
             renderEmpty()
           )}

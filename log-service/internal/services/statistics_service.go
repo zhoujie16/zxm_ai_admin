@@ -145,13 +145,13 @@ func (s *StatisticsService) GetUserStatistics(req *GetUserStatisticsRequest) (*U
 	}
 
 	// 按日期分组统计
-	byDate, err := s.groupByDate(baseQuery)
+	byDate, err := s.groupByDate(req.Authorization, startTime, endTime)
 	if err != nil {
 		return nil, errors.New("获取日期统计失败: " + err.Error())
 	}
 
 	// 按小时分组统计
-	byTime, err := s.groupByTime(baseQuery)
+	byTime, err := s.groupByTime(req.Authorization, startTime, endTime)
 	if err != nil {
 		return nil, errors.New("获取小时统计失败: " + err.Error())
 	}
@@ -326,17 +326,21 @@ func (s *StatisticsService) groupByPath(query *gorm.DB) ([]PathStatistics, error
 }
 
 // groupByDate 按日期分组统计
-func (s *StatisticsService) groupByDate(query *gorm.DB) ([]DateStatistics, error) {
+func (s *StatisticsService) groupByDate(authorization string, startTime, endTime time.Time) ([]DateStatistics, error) {
 	type Result struct {
 		Date  string
 		Count int64
 	}
 
 	var results []Result
-	err := query.Select("date(time) as date, COUNT(*) as count").
-		Group("date(time)").
-		Order("date(time) ASC").
-		Scan(&results).Error
+	err := database.DB.Raw(`
+		SELECT strftime('%Y-%m-%d', datetime(time, '+8 hours')) as date, COUNT(*) as count
+		FROM token_usage_logs
+		WHERE authorization = ?
+		  AND time >= ? AND time <= ?
+		GROUP BY strftime('%Y-%m-%d', datetime(time, '+8 hours'))
+		ORDER BY date ASC
+	`, authorization, startTime, endTime).Scan(&results).Error
 
 	if err != nil {
 		return nil, err
@@ -354,17 +358,21 @@ func (s *StatisticsService) groupByDate(query *gorm.DB) ([]DateStatistics, error
 }
 
 // groupByTime 按小时分组统计
-func (s *StatisticsService) groupByTime(query *gorm.DB) ([]TimeStatistics, error) {
+func (s *StatisticsService) groupByTime(authorization string, startTime, endTime time.Time) ([]TimeStatistics, error) {
 	type Result struct {
 		Time  string
 		Count int64
 	}
 
 	var results []Result
-	err := query.Select("strftime('%Y-%m-%d %H:00:00', time) as time, COUNT(*) as count").
-		Group("strftime('%Y-%m-%d %H:00:00', time)").
-		Order("time ASC").
-		Scan(&results).Error
+	err := database.DB.Raw(`
+		SELECT strftime('%Y-%m-%d %H:00:00', datetime(time, '+8 hours')) as time, COUNT(*) as count
+		FROM token_usage_logs
+		WHERE authorization = ?
+		  AND time >= ? AND time <= ?
+		GROUP BY strftime('%Y-%m-%d %H:00:00', datetime(time, '+8 hours'))
+		ORDER BY time ASC
+	`, authorization, startTime, endTime).Scan(&results).Error
 
 	if err != nil {
 		return nil, err

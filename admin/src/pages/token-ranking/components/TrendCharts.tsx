@@ -4,8 +4,8 @@
 import React from 'react';
 import { Card, Radio, Typography } from 'antd';
 import {
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   Tooltip,
@@ -102,7 +102,7 @@ const TrendCharts: React.FC<ITrendChartsProps> = ({ byDate, byTime }) => {
     >
       {currentData.length > 0 ? (
         <ResponsiveContainer width="100%" height={320}>
-          <LineChart data={currentData} margin={{ left: 0, right: 10, top: 10, bottom: 0 }}>
+          <BarChart data={currentData} margin={{ left: 0, right: 10, top: 10, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
             <XAxis
               dataKey="name"
@@ -112,15 +112,8 @@ const TrendCharts: React.FC<ITrendChartsProps> = ({ byDate, byTime }) => {
             />
             <YAxis tick={{ fontSize: 12 }} stroke="#999" />
             <Tooltip content={<CustomTooltip />} />
-            <Line
-              type="monotone"
-              dataKey="count"
-              stroke="#1890ff"
-              strokeWidth={2}
-              dot={{ fill: '#1890ff', r: 4, strokeWidth: 0 }}
-              activeDot={{ r: 6, strokeWidth: 0 }}
-            />
-          </LineChart>
+            <Bar dataKey="count" fill="#1890ff" radius={[4, 4, 0, 0]} barSize={30} />
+          </BarChart>
         </ResponsiveContainer>
       ) : (
         renderEmpty()
